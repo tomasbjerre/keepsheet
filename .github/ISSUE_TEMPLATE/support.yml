@@ -1,0 +1,55 @@
+name: Support / question
+description: Ask for help using KeepSheet, or something that's unclear.
+title: "[Support]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        KeepSheet has five screens:
+
+        - **Home** — the document list and the Scan/Import/Merge actions.
+        - **Capture** — the live camera view used while scanning pages.
+        - **Page Review** — reordering, retaking, and filtering captured pages before saving.
+        - **Merge** — picking and ordering existing PDFs to combine.
+        - **Document Detail** — the view, share, rename, and delete screen for one document.
+
+        Using these names below helps answer your question faster.
+
+  # Keep this option list (and the markdown explainer above) in sync with
+  # the screens defined in specs/ui-flows.md — see the note at the top of
+  # that file.
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which screen is this about?
+      options:
+        - Home (document list / Scan / Import / Merge)
+        - Capture (live camera scanning)
+        - Page Review (reorder / retake / filter)
+        - Merge (picking and ordering PDFs)
+        - Document Detail (a saved document)
+        - Not tied to a specific screen
+
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: >
+        If it involves a specific control, name it — e.g. **Scan**,
+        **Import**, **Merge**, **Retake**, **Save**, **Share**, or
+        **Delete**.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots or other context that might help.
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments (optional)
+      description: >
+        Drag and drop or paste files here — e.g. screenshots or an
+        example PDF.

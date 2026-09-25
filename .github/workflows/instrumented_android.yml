@@ -1,0 +1,88 @@
+name: Instrumented Android
+
+# The emulator run behind every screenshot and every instrumented test in
+# app/src/androidTest. Reusable, so that Release Android (release_android.yml)
+# and pull-request CI (ci_android.yml) run exactly the same job: the first
+# time a broken instrumented test shows up should be on the PR that broke
+# it, not halfway through a release.
+on:
+  workflow_call:
+
+defaults:
+  run:
+    working-directory: android
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Without this, every run pays for a fresh system-image download and a cold AVD
+      # boot — cache the AVD's own files, and only actually create/boot-and-snapshot
+      # one (the step below) when the cache misses.
+      - name: AVD cache
+        uses: actions/cache@v6
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-35-google_apis-x86_64
+
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          # Camera capture (specs/capture-and-processing.md) is exercised against a
+          # webcam-backed virtual camera in CI rather than a real one, so this omits
+          # the "-camera-back none" flag ScreenshotTest's non-camera flows would
+          # otherwise want — revisit once a camera-driven instrumented test exists.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: Run instrumented tests and capture screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          working-directory: ./android
+          script: |
+            # The AVD is restored from a cached snapshot (see the AVD cache step
+            # above) and /sdcard persists as part of it — clear any screenshots left
+            # over from whatever ScreenshotTest looked like when that snapshot was
+            # taken, so a later `adb pull` doesn't silently return stale images
+            # alongside the current ones.
+            adb shell rm -rf /sdcard/keepsheet-screenshots
+            ./gradlew connectedDebugAndroidTest
+            adb pull /sdcard/keepsheet-screenshots screenshots-raw || mkdir -p screenshots-raw
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots
+          path: android/screenshots-raw
+          retention-days: 1
+          if-no-files-found: warn

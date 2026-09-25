@@ -1,0 +1,18 @@
+KeepSheet turns paper and photos into clean, searchable PDFs, and lets you merge existing PDFs into one, in whatever order you choose. Everything happens on your device — no accounts, no cloud.
+
+WHAT IT DOES
+- Scan pages with your camera, or import existing photos — KeepSheet automatically detects the page edges and corrects the perspective so it looks scanned, not photographed at an angle.
+- Capture several pages in a row, reorder or retake any of them, and save them as one PDF.
+- Apply a document filter — color, grayscale, or black-and-white — to make text crisp and shrink file size.
+- Recognize text on every page (on-device OCR), so your PDFs are searchable later.
+- Get a sensible file name suggested automatically for every document.
+- Merge several existing PDF files into one, choosing the exact order.
+- Browse your document history, search it by name or content, and share any PDF straight from the app.
+
+WHAT IT DOESN'T DO
+KeepSheet is deliberately simple. There's no annotation or signing, no cloud sync, and no accounts. Your documents stay on your device.
+
+PERMISSIONS
+KeepSheet asks for camera access only when you start scanning, and photo/media access only when you choose to import. All processing — cropping, filtering, and text recognition — runs entirely on your device.
+
+KeepSheet is open source. Feedback, bug reports, and feature requests are welcome at the project's GitHub issues page.

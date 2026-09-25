@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>tomasbjerre/renovate-config//org-inherited-config"],
+  "packageRules": [
+    {
+      // AGP has a minimum required Gradle version (e.g. AGP 8.13 needs Gradle
+      // 8.13+) that climbs independently of AGP's own version number. Grouped
+      // with the wrapper so a bump never lands AGP ahead of a Gradle it needs.
+      "matchPackageNames": ["com.android.application", "gradle"],
+      "groupName": "Android Gradle Plugin + Gradle wrapper"
+    },
+    {
+      // Let the Gradle wrapper itself update immediately (skip the 5-day
+      // minimumReleaseAge below), so it's essentially always at Gradle's
+      // latest and never the thing an AGP bump is waiting on. Gradle
+      // releases are stable on arrival, so there's no real benefit to
+      // waiting here.
+      "matchPackageNames": ["gradle"],
+      "minimumReleaseAge": "0 days"
+    },
+    {
+      // Kotlin, its Compose compiler plugin, and KSP must move together — KSP's
+      // version is only valid for one specific Kotlin version, and the Compose
+      // compiler plugin must match the Kotlin version exactly. Grouped so a
+      // bump proposes all three in one PR instead of landing them
+      // independently and breaking the build.
+      "matchPackageNames": [
+        "org.jetbrains.kotlin.android",
+        "org.jetbrains.kotlin.plugin.compose",
+        "com.google.devtools.ksp"
+      ],
+      "groupName": "Kotlin toolchain (Kotlin, Compose compiler, KSP)"
+    },
+    {
+      // All androidx.room artifacts (runtime, ktx, compiler) are released
+      // together and must be on the same version — Google requires this
+      // explicitly. Grouped so a bump always proposes all three together.
+      "matchPackageNames": [
+        "androidx.room:room-runtime",
+        "androidx.room:room-ktx",
+        "androidx.room:room-compiler"
+      ],
+      "groupName": "Room (runtime, ktx, compiler)"
+    }
+  ]
+}

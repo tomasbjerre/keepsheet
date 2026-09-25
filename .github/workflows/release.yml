@@ -1,0 +1,19 @@
+name: Draft Release
+
+# Keeps a draft GitHub Release up to date with a changelog rendered from
+# Conventional Commits (see AGENTS.md) on every push to main — it does not
+# tag or publish anything itself. Publishing that draft (by hand in the
+# GitHub UI, `gh release edit --draft=false`, or the org-wide scheduled
+# tomasbjerre/.github publish-draft-releases.yaml) creates the real tag and
+# fires the `release: published` event that release_android.yml listens for.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  draft-release:
+    uses: tomasbjerre/.github/.github/workflows/bundle-draft-release.yaml@master
+    secrets: inherit

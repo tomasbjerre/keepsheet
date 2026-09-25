@@ -1,0 +1,61 @@
+name: Feature request
+description: Suggest something new, or a change to how KeepSheet behaves.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. KeepSheet has five screens:
+
+        - **Home** — the document list and the Scan/Import/Merge actions.
+        - **Capture** — the live camera view used while scanning pages.
+        - **Page Review** — reordering, retaking, and filtering captured pages before saving.
+        - **Merge** — picking and ordering existing PDFs to combine.
+        - **Document Detail** — the view, share, rename, and delete screen for one document.
+
+        Using these names below helps place the request correctly.
+
+  # Keep this option list (and the markdown explainer above) in sync with
+  # the screens defined in specs/ui-flows.md — see the note at the top of
+  # that file.
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which screen does this affect (if any)?
+      options:
+        - Home (document list / Scan / Import / Merge)
+        - Capture (live camera scanning)
+        - Page Review (reorder / retake / filter)
+        - Merge (picking and ordering PDFs)
+        - Document Detail (a saved document)
+        - Not tied to a specific screen / a new screen
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What are you trying to do today that KeepSheet doesn't support well?
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: >
+        Describe the change. If it involves an existing control, use its
+        name — e.g. **Scan**, **Import**, **Merge**, **Retake**, **Save**,
+        **Share**, or **Delete**.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Any workarounds you're using today, or other approaches.
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments (optional)
+      description: >
+        Drag and drop or paste files here — e.g. mockups, screenshots,
+        or an example PDF.

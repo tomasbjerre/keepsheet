@@ -1,0 +1,25 @@
+name: Release Android
+
+# Runs when a drafted GitHub Release (see release.yml) is published — by
+# hand, or by the org-wide scheduled publish-draft-releases.yaml in
+# tomasbjerre/.github — using its tag as the version. Doesn't create a tag
+# or touch CHANGELOG.md directly itself; that's handled by
+# actions/update-changelog, called from within bundle-android-release.yaml.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  # Kept local — see the same note in ci_android.yml. Uploads the
+  # "screenshots" artifact that bundle-android-release.yaml installs into
+  # the Play listing and docs/screenshots.
+  screenshots:
+    uses: ./.github/workflows/instrumented_android.yml
+
+  release:
+    needs: screenshots
+    uses: tomasbjerre/.github/.github/workflows/bundle-android-release.yaml@master
+    secrets: inherit

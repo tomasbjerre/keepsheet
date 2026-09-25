@@ -1,0 +1,18 @@
+name: CI Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    uses: tomasbjerre/.github/.github/workflows/bundle-android-ci.yaml@master
+
+  # Kept local rather than folded into bundle-android-ci.yaml: emulator setup
+  # for instrumented tests tends to be app-specific (seeded data, a
+  # particular camera flag, etc.) — see instrumented_android.yml. Runs here
+  # too (not just from Release Android) so a broken instrumented test fails
+  # the PR that broke it instead of the next release.
+  instrumented:
+    uses: ./.github/workflows/instrumented_android.yml

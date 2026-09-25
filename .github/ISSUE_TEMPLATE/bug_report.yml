@@ -1,0 +1,86 @@
+name: Bug report
+description: Something in KeepSheet isn't working the way it should.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. KeepSheet has five screens:
+
+        - **Home** — the document list and the Scan/Import/Merge actions.
+        - **Capture** — the live camera view used while scanning pages.
+        - **Page Review** — reordering, retaking, and filtering captured pages before saving.
+        - **Merge** — picking and ordering existing PDFs to combine.
+        - **Document Detail** — the view, share, rename, and delete screen for one document.
+
+        Using these names below helps pinpoint the issue faster.
+
+  # Keep this option list (and the markdown explainer above) in sync with
+  # the screens defined in specs/ui-flows.md — see the note at the top of
+  # that file.
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which screen were you on?
+      options:
+        - Home (document list / Scan / Import / Merge)
+        - Capture (live camera scanning)
+        - Page Review (reorder / retake / filter)
+        - Merge (picking and ordering PDFs)
+        - Document Detail (a saved document)
+        - Not tied to a specific screen
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: >
+        What did you do, what did you expect, and what happened instead?
+        If relevant, mention which control you used — e.g. **Scan**,
+        **Import**, **Merge**, **Retake**, **Save**, **Share**,
+        **Delete**, or **Back**.
+      placeholder: |
+        1. On the Page Review screen, I tapped the filter picker...
+        2. I expected it to apply to just that page...
+        3. Instead...
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Home
+        2. Tap Scan
+        3. ...
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      description: >-
+        Also shown by KeepSheet's ⓘ icon on Home, in this same format —
+        you can copy it straight from there.
+      placeholder: e.g. Pixel 7, Android 15
+
+  - type: input
+    id: app-version
+    attributes:
+      label: KeepSheet version
+      description: >-
+        Tap the ⓘ icon on KeepSheet's Home screen — it's shown right at
+        the top of that view.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, logs, or other context.
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments (optional)
+      description: >
+        Drag and drop or paste files here — e.g. screenshots, screen
+        recordings, a sample PDF/photo, or logcat output.

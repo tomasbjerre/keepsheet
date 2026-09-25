@@ -1,0 +1,18 @@
+build:
+  maxIssues: 0
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ["Composable"] # Compose functions are conventionally PascalCase.
+
+style:
+  MagicNumber:
+    active: false # Image/PDF geometry math is full of legitimate constants.
+  ReturnCount:
+    max: 4 # guard clauses are idiomatic here.
+
+complexity:
+  TooManyFunctions:
+    active: false
+  LongParameterList:
+    functionThreshold: 10 # plain data-carrying calls (pages, documents), not complex logic.
