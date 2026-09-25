@@ -59,6 +59,8 @@ a confirmation step first.
 
 ## Feedback and support
 
+<img src="screenshots/4-information.jpg" alt="Information dialog" width="200">
+
 Tap the ⓘ icon on Home for KeepSheet's version, your device's model and
 Android version, and links to report an issue or reread this manual.
 
