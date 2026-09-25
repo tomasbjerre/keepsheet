@@ -12,4 +12,9 @@ interface PageDao {
     /** See specs/data-model.md#required-queries — sequence order, not insert order. */
     @Query("SELECT * FROM pages WHERE documentId = :documentId ORDER BY sequence ASC")
     suspend fun getForDocument(documentId: Long): List<Page>
+
+    /** See specs/data-model.md#document-lifetime — every page's image file must be
+     * deleted before the rows are, so this reads them all first. */
+    @Query("SELECT * FROM pages")
+    suspend fun getAll(): List<Page>
 }

@@ -184,4 +184,33 @@ class DocumentRepositoryTest {
 
             assertThat(repository.getPages(documentId)).isEmpty()
         }
+
+    @Test
+    fun `clearAll deletes every document, its pages, and their underlying files`() =
+        runTest {
+            // See specs/data-model.md#document-lifetime — the fresh-app-start wipe.
+            val firstPdf = File.createTempFile("document", ".pdf")
+            val firstPage = File.createTempFile("page", ".jpg")
+            val firstId = repository.createDocument(1_000, "First", firstPdf.absolutePath, DocumentSource.SCANNED)
+            repository.appendPage(firstId, 0, firstPage.absolutePath, PageFilter.COLOR)
+
+            val secondPdf = File.createTempFile("document", ".pdf")
+            repository.createDocument(2_000, "Second", secondPdf.absolutePath, DocumentSource.MERGED)
+
+            repository.clearAll()
+
+            assertThat(repository.observeDocuments().first()).isEmpty()
+            assertThat(repository.getPages(firstId)).isEmpty()
+            assertThat(firstPdf).doesNotExist()
+            assertThat(firstPage).doesNotExist()
+            assertThat(secondPdf).doesNotExist()
+        }
+
+    @Test
+    fun `clearAll on an empty database does nothing`() =
+        runTest {
+            repository.clearAll()
+
+            assertThat(repository.observeDocuments().first()).isEmpty()
+        }
 }

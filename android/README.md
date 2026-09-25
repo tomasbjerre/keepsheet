@@ -102,12 +102,11 @@ the requirement actually works, not that a mock was told to say so:
   `DocumentBuilderTest` fakes out, on a real device/emulator, since
   Robolectric's fidelity for real image decoding and PDF byte output isn't
   something to rely on.
-- **Schema migrations** — see `specs/data-model.md#data-integrity-on-start`:
-  a schema change must carry existing data forward, not silently drop it.
-  `KeepSheetDatabase` is still schema version 1 (no real user has data
-  yet), so there's nothing to migrate — the first schema change must add
-  both an explicit `Migration` and a migration test, the same way wisp's
-  `WispDatabase`/`WispDatabaseMigrationTest` do.
+- **Schema migrations** — see `specs/data-model.md#document-lifetime`: no
+  document survives a fresh app start anyway, so `KeepSheetDatabase`
+  deliberately uses `fallbackToDestructiveMigration()` rather than
+  hand-written `Migration`s — there's never anything worth preserving
+  across a schema change.
 - Assertions use [AssertJ](https://assertj.github.io/doc/).
 
 Run them with `./gradlew testDebugUnitTest`.

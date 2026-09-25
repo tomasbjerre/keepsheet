@@ -1,6 +1,7 @@
 package com.github.tomasbjerre.keepsheet.data
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.io.File
 
 /**
@@ -87,5 +88,18 @@ class DocumentRepository(
     suspend fun deleteDocumentById(documentId: Long) {
         val document = documentDao.getById(documentId) ?: return
         deleteDocument(document)
+    }
+
+    /**
+     * See specs/data-model.md#document-lifetime: called once, before anything else, on
+     * every fresh app process start — KeepSheet keeps no permanent archive, so nothing
+     * survives past the session that produced it unless it was exported (shared) out.
+     */
+    suspend fun clearAll() {
+        val documents = documentDao.observeAll().first()
+        val pages = pageDao.getAll()
+        pages.forEach { File(it.imagePath).delete() }
+        documents.forEach { File(it.pdfPath).delete() }
+        documentDao.deleteAll()
     }
 }

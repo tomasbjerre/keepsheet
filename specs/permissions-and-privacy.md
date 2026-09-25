@@ -31,13 +31,26 @@
 - All data (documents, pages, recognized text) stays on-device. Nothing is
   uploaded anywhere by default — there is no backend in scope for
   KeepSheet (see [Overview](overview.md)).
+- A captured or imported page image lives only in KeepSheet's own
+  app-private storage, never the device's shared photo library — it never
+  shows up in the user's camera roll, and never gets swept into that
+  library's own cloud backup. The only copy that ever leaves KeepSheet's
+  storage is a finished PDF the user explicitly shares (see the next
+  point).
+- No document is kept indefinitely — see
+  [Data Model](data-model.md#document-lifetime): everything is cleared on
+  the next fresh app start, and sharing (exporting) a document is the
+  only way to keep a copy beyond that, at a destination of the user's own
+  choosing.
 - Cropping, straightening, filtering, and text recognition (OCR) all run
   **on-device** — no page image or recognized text is ever sent to a
   server, KeepSheet's or anyone else's (see
   [Capture & Processing](capture-and-processing.md)).
 - No analytics or crash reporting that transmits document content.
 - Deleting a document (see [UI Flows](ui-flows.md)) must remove its pages
-  and underlying files too — no orphaned data left behind.
+  and underlying files too — no orphaned data left behind; the same
+  guarantee applies when every document is cleared at once (see
+  [Data Model](data-model.md#document-lifetime)).
 
 ## Privacy policy
 
