@@ -41,15 +41,18 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * Reached from Home's Import (see specs/ui-flows.md#3-page-review). Capture
- * doesn't exist yet, so this only ever sees imported pages for now — crop
- * adjustment, filter picking, reorder, and retake aren't implemented yet
- * either (same libraries note as HomeScreen's Scan).
+ * Reached from Capture's Done action or Home's Import (see
+ * specs/ui-flows.md#3-page-review). Crop adjustment, filter picking,
+ * reorder, and retake aren't implemented here yet — Capture's own
+ * thumbnail strip offers reorder/retake for a page before it ever reaches
+ * this screen, but per spec those same actions belong here too (still to
+ * do, alongside crop/filter — see android/app/build.gradle.kts).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PageReviewScreen(
     pages: List<Uri>,
+    source: DocumentSource,
     repository: DocumentRepository,
     filesDir: File,
     onSaved: () -> Unit,
@@ -77,7 +80,7 @@ fun PageReviewScreen(
                 onClick = {
                     saving = true
                     coroutineScope.launch {
-                        saveAsDocument(pages, repository, filesDir, context.contentResolver)
+                        saveAsDocument(pages, source, repository, filesDir, context.contentResolver)
                         saving = false
                         onSaved()
                     }
@@ -136,6 +139,7 @@ private fun SaveButton(
 
 private suspend fun saveAsDocument(
     pages: List<Uri>,
+    source: DocumentSource,
     repository: DocumentRepository,
     filesDir: File,
     contentResolver: ContentResolver,
@@ -151,7 +155,7 @@ private suspend fun saveAsDocument(
     withContext(Dispatchers.IO) {
         builder.build(
             pageCount = pages.size,
-            source = DocumentSource.IMPORTED,
+            source = source,
             finalizedAt = System.currentTimeMillis(),
         )
     }

@@ -24,11 +24,14 @@ with its name, date, page count, and size. Tap a row to open it.
 
 ## Capture
 
-Opened by **Scan**. A live camera view with an overlay hinting at the
-detected page edges — tap the shutter to capture a page. Captured pages
-appear in a thumbnail strip below, which you can reorder or retake pages
-in. Add more photos via **Import** without leaving this screen. Tap **Done**
-once every page is captured.
+<img src="screenshots/2-capture.jpg" alt="Capture screen" width="200">
+
+Opened by **Scan**. A live camera view — tap the shutter to capture a
+page. Captured pages appear in a thumbnail strip below, where you can drag
+to reorder them, retake one, or remove it. Add more photos via **Import**
+without leaving this screen. If camera access isn't granted, this screen
+explains why and still lets you add pages with Import. Tap **Done** once
+every page is captured.
 
 ## Page Review
 

@@ -1,12 +1,17 @@
 package com.github.tomasbjerre.keepsheet
 
+import android.Manifest
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 
 /**
@@ -17,13 +22,20 @@ import org.junit.runner.RunWith
  * `connectedAndroidTest` wipes by uninstalling the app when the run
  * finishes) — the CI workflow pulls it from there via `adb pull`.
  *
+ * Camera permission is pre-granted (see CaptureScreenTest) so Capture's
+ * screenshot shows the real live preview rather than the permission
+ * rationale state.
+ *
  * When you add a screen or a state to a screen, add a capture for it here
  * in the same change — see ../../../../../../../AGENTS.md.
  */
 @RunWith(AndroidJUnit4::class)
 class ScreenshotTest {
+    private val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
+    private val composeRule = createAndroidComposeRule<MainActivity>()
+
     @get:Rule
-    val composeRule = createAndroidComposeRule<MainActivity>()
+    val ruleChain: RuleChain = RuleChain.outerRule(permissionRule).around(composeRule)
 
     private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
@@ -32,6 +44,10 @@ class ScreenshotTest {
         dismissSystemAnrIfPresent()
         composeRule.waitForIdle()
         screenshot("1-home")
+
+        composeRule.onNodeWithText("Scan").performClick()
+        composeRule.waitForIdle()
+        screenshot("2-capture")
     }
 
     // Via the shell, not app-code File I/O: scoped storage silently blocks the app

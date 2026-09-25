@@ -38,16 +38,17 @@ import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import kotlinx.coroutines.launch
 
 /**
- * Home screen (see specs/ui-flows.md#1-home). Capture, Merge, and Document
- * Detail aren't implemented yet (see the note in
- * android/app/build.gradle.kts for the libraries Capture needs), so their
- * actions here report that rather than doing nothing when tapped (#3).
- * Import (see specs/ui-flows.md#3-page-review) is implemented.
+ * Home screen (see specs/ui-flows.md#1-home). Merge and Document Detail
+ * aren't implemented yet (see the note in android/app/build.gradle.kts for
+ * the libraries Merge needs), so Merge's action here reports that rather
+ * than doing nothing when tapped (#3). Scan (specs/ui-flows.md#2-capture)
+ * and Import (specs/ui-flows.md#3-page-review) are implemented.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     repository: DocumentRepository,
+    onScan: () -> Unit,
     onPhotosSelectedForImport: (List<Uri>) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -83,7 +84,7 @@ fun HomeScreen(
                     .padding(16.dp),
         ) {
             HomeActionsRow(
-                onScan = { notImplementedYet("Scan") },
+                onScan = onScan,
                 onImport = {
                     val imagesOnly = ActivityResultContracts.PickVisualMedia.ImageOnly
                     photoPickerLauncher.launch(PickVisualMediaRequest(imagesOnly))
