@@ -55,7 +55,7 @@ fun PageReviewScreen(
     source: DocumentSource,
     repository: DocumentRepository,
     filesDir: File,
-    onSaved: () -> Unit,
+    onSaved: (documentId: Long) -> Unit,
     onCancel: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -80,9 +80,14 @@ fun PageReviewScreen(
                 onClick = {
                     saving = true
                     coroutineScope.launch {
-                        saveAsDocument(pages, source, repository, filesDir, context.contentResolver)
-                        saving = false
-                        onSaved()
+                        val documentId = saveAsDocument(pages, source, repository, filesDir, context.contentResolver)
+                        // Explicit, rather than relying on withContext(Dispatchers.IO) above
+                        // to hand back to whatever dispatched this coroutine: onSaved()
+                        // navigates, and NavController requires the main thread for that.
+                        withContext(Dispatchers.Main) {
+                            saving = false
+                            onSaved(documentId)
+                        }
                     }
                 },
             )
@@ -143,7 +148,7 @@ private suspend fun saveAsDocument(
     repository: DocumentRepository,
     filesDir: File,
     contentResolver: ContentResolver,
-) {
+): Long {
     val builder =
         DocumentBuilder(
             repository = repository,
@@ -152,7 +157,7 @@ private suspend fun saveAsDocument(
             importPage = { index, destination -> copyImageForPage(contentResolver, pages[index], destination) },
             buildPdf = { imagePaths, destination -> buildPdfFromImages(imagePaths, destination) },
         )
-    withContext(Dispatchers.IO) {
+    return withContext(Dispatchers.IO) {
         builder.build(
             pageCount = pages.size,
             source = source,

@@ -49,9 +49,13 @@ combined in. Tap **Merge** to produce the combined PDF.
 
 ## Document Detail
 
-Opened by tapping any document. Shows the PDF's pages, its name (tap to
-rename), date, page count, and size. **Share** hands the PDF to any app you
-choose; **Delete** removes it, with a confirmation step first.
+<img src="screenshots/3-document-detail.jpg" alt="Document Detail screen" width="200">
+
+Opened by tapping any document, or automatically once you save a new one.
+Shows a preview of the PDF's pages, its name (tap to edit, any time), and
+its date, page count, and size. **Share** hands the PDF to any app you
+choose (Drive, email, messaging, printing, …); **Delete** removes it, with
+a confirmation step first.
 
 ## Feedback and support
 

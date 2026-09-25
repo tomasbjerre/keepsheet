@@ -25,8 +25,10 @@ fun fallbackDocumentName(
     return uniqueName(base, existingNames)
 }
 
-/** See specs/file-naming.md#rules — "(2)", "(3)", ... appended on collision. */
-private fun uniqueName(
+/** See specs/file-naming.md#rules — "(2)", "(3)", ... appended on collision. Also used to
+ * de-duplicate a user-entered rename (see [com.github.tomasbjerre.keepsheet.data.renameDocument]),
+ * not just an auto-suggested name. */
+fun uniqueName(
     base: String,
     existingNames: Collection<String>,
 ): String {

@@ -1,7 +1,10 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,6 +12,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
+import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
+import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -48,6 +53,29 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Scan").performClick()
         composeRule.waitForIdle()
         screenshot("2-capture")
+
+        awaitEnabled("Shutter")
+        composeRule.onNodeWithText("Shutter").performClick()
+        awaitTagCount(THUMBNAIL_TEST_TAG, 1)
+        composeRule.onNodeWithText("Done").performClick()
+        composeRule.onNodeWithText("Save").performClick()
+        awaitTagCount(PAGE_PREVIEW_TEST_TAG, 1)
+        screenshot("3-document-detail")
+    }
+
+    private fun awaitEnabled(text: String) {
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule.onAllNodes(hasText(text) and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun awaitTagCount(
+        tag: String,
+        count: Int,
+    ) {
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().size == count
+        }
     }
 
     // Via the shell, not app-code File I/O: scoped storage silently blocks the app
@@ -71,5 +99,6 @@ class ScreenshotTest {
 
     private companion object {
         const val SCREENSHOT_DIR = "/sdcard/keepsheet-screenshots"
+        const val TIMEOUT_MILLIS = 15_000L
     }
 }
