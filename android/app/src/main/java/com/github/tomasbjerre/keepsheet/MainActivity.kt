@@ -13,7 +13,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             KeepSheetTheme {
-                KeepSheetApp(repository = (application as KeepSheetApplication).repository)
+                KeepSheetApp(
+                    repository = (application as KeepSheetApplication).repository,
+                    filesDir = filesDir,
+                )
             }
         }
     }

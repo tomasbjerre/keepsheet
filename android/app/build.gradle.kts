@@ -125,6 +125,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-core")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.room:room-runtime:2.8.5")
@@ -137,6 +138,10 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.4.1")
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
+
+    // Page thumbnails (Page Review, Document Detail) from local content:// / file
+    // Uris — no network use, so no INTERNET permission implication.
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
     // Still needed: an edge-detection/perspective-correction library (e.g. OpenCV) for
     // specs/capture-and-processing.md#automatic-cropping-and-straightening, an
