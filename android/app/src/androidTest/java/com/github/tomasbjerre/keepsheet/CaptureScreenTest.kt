@@ -3,6 +3,8 @@ package com.github.tomasbjerre.keepsheet
 import android.Manifest
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -40,16 +42,14 @@ class CaptureScreenTest {
         composeRule.onNodeWithText("Scan").performClick()
         composeRule.onNodeWithText("Done").assertIsNotEnabled()
 
-        composeRule.onNodeWithText("Shutter").performClick()
-        awaitThumbnailCount(1)
+        capturePage()
         composeRule.onNodeWithText("Done").assertIsEnabled()
     }
 
     @Test
     fun retakeReplacesThePageInsteadOfAddingANewOne() {
         composeRule.onNodeWithText("Scan").performClick()
-        composeRule.onNodeWithText("Shutter").performClick()
-        awaitThumbnailCount(1)
+        capturePage()
 
         composeRule.onNodeWithContentDescription("Retake page").performClick()
         composeRule.onNodeWithText("Retaking — tap the shutter for a new shot").assertExists()
@@ -61,8 +61,7 @@ class CaptureScreenTest {
     @Test
     fun removingThePageDisablesDoneAgain() {
         composeRule.onNodeWithText("Scan").performClick()
-        composeRule.onNodeWithText("Shutter").performClick()
-        awaitThumbnailCount(1)
+        capturePage()
 
         composeRule.onNodeWithContentDescription("Remove page").performClick()
         awaitThumbnailCount(0)
@@ -72,8 +71,7 @@ class CaptureScreenTest {
     @Test
     fun backWithPagesCapturedAsksForConfirmationBeforeDiscarding() {
         composeRule.onNodeWithText("Scan").performClick()
-        composeRule.onNodeWithText("Shutter").performClick()
-        awaitThumbnailCount(1)
+        capturePage()
 
         composeRule.onNodeWithContentDescription("Back").performClick()
         composeRule.onNodeWithText("Discard this scan?").assertExists()
@@ -86,6 +84,18 @@ class CaptureScreenTest {
         composeRule.onNodeWithText("No documents yet — tap Scan to create your first PDF.").assertExists()
     }
 
+    /** Waits for the shutter to actually be usable (CameraX binding is async — see
+     * CaptureScreen's cameraReady gate) before tapping it, then waits for the resulting
+     * thumbnail: real hardware capture can take longer than a UI action normally would,
+     * especially on a cold-started/software-rendered emulator. */
+    private fun capturePage() {
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule.onAllNodes(hasText("Shutter") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Shutter").performClick()
+        awaitThumbnailCount(1)
+    }
+
     private fun awaitThumbnailCount(count: Int) {
         composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
             composeRule.onAllNodesWithTag(THUMBNAIL_TEST_TAG).fetchSemanticsNodes().size == count
@@ -93,6 +103,6 @@ class CaptureScreenTest {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 10_000L
+        const val TIMEOUT_MILLIS = 15_000L
     }
 }
