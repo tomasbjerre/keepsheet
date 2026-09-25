@@ -18,6 +18,12 @@ interface DocumentDao {
     @Delete
     suspend fun delete(document: Document)
 
+    /** See specs/data-model.md#document-lifetime — cascades to delete every Page row
+     * too (Page's foreign key is ON DELETE CASCADE), but not their image files; the
+     * caller must delete those (and every pdfPath) first, while it still has the paths. */
+    @Query("DELETE FROM documents")
+    suspend fun deleteAll()
+
     /** See specs/data-model.md#required-queries — most recent first. */
     @Query("SELECT * FROM documents ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<Document>>

@@ -23,6 +23,10 @@ which is the source of truth for KeepSheet's data-handling behavior.
 - Everything above stays **on your device**, in local storage. KeepSheet
   has no backend, no server, and no account system — there is nothing for
   it to upload data to, even if it wanted to.
+- A page you capture or import never leaves KeepSheet's own private
+  storage for your device's shared photo library — it won't show up in
+  your camera roll, and won't get swept into that library's own cloud
+  backup.
 - Cropping, straightening, filtering, and text recognition (OCR) all run
   **on-device**. No page image, PDF, or recognized text is ever sent
   anywhere.
@@ -34,6 +38,11 @@ which is the source of truth for KeepSheet's data-handling behavior.
 - Deleting a document in the app removes its pages and PDF file
   immediately — nothing orphaned is left behind.
 - Uninstalling KeepSheet removes all of its local data from your device.
+- KeepSheet doesn't keep a permanent archive: every document (and any
+  page still on disk from a scan you didn't finish) is cleared the next
+  time you open KeepSheet after it's been fully closed — not while
+  you're just using another app in the meantime. Share (export) anything
+  you want to keep, to wherever you choose, before then.
 
 ## Changes
 

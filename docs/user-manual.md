@@ -4,6 +4,12 @@ KeepSheet turns paper and photos into clean, searchable PDFs, and merges
 existing PDFs into one, in whatever order you choose. Everything happens on
 your device — no accounts, no cloud.
 
+KeepSheet doesn't keep a permanent archive: your documents are there for
+as long as you keep using the app (switching to other apps and back in
+the meantime is fine), and are cleared the next time you open it after
+fully closing it. **Share** whatever you want to keep, to wherever you
+choose, before then.
+
 _This manual will grow screenshots as each screen is implemented — see
 [`specs/ui-flows.md`](../specs/ui-flows.md) for the authoritative
 description of every screen and control in the meantime._

@@ -57,25 +57,35 @@ Any implementation's storage layer must support:
    (case-insensitive), most recent match first.
 5. Delete a document, its pages, and their underlying image/PDF files —
    nothing orphaned left behind.
+6. On every fresh app process start (see
+   [Document lifetime](#document-lifetime)), delete every document, page,
+   and underlying file, before any of them are shown — the same "nothing
+   orphaned" guarantee as deleting one document, applied to all of them
+   at once.
 
-## Data integrity on start
+## Document lifetime
 
-Stored data an implementation reads must never be trusted blindly just
-because it came from local storage — a previous run could have been
-killed mid-write, or a future version of KeepSheet could change what a
-stored value is allowed to mean. On every app start:
+KeepSheet does not keep a permanent archive — see
+[Overview](overview.md#in-scope). Every Document, every Page, and any
+page image still on disk from a capture session that was never finished,
+is deleted before anything else happens on a fresh app process start —
+not when the app is merely backgrounded, has its screen locked, or is
+switched away from, all of which leave a session's documents untouched
+for as long as that process keeps running.
 
-- A document left in an impossible state — e.g. a `pdfPath` pointing at a
-  file that no longer exists — is fixed if a fix is well-defined (e.g.
-  rebuilt from its still-present pages), or removed from the list if it
-  isn't, rather than shown as a broken row.
-- A storage schema change (a new field, a changed meaning for an existing
-  one, a new required relationship) must carry the existing data forward
-  — via an explicit, tested migration — rather than discarding it. This
-  applies from the first release KeepSheet actually ships to real users
-  onward: once real devices hold real documents, an implementation detail
-  changing shape is never a reason to silently erase someone's files. A
-  schema change with no reasonable migration path (rare) must say why in
-  the change itself, not leave it unstated.
-- Future storage-integrity checks belong here as they're identified —
-  this section is the list, not just the one example above.
+- "A fresh process start" covers every way the previous process could
+  have ended — the user swiping KeepSheet away, the OS reclaiming its
+  memory under pressure, a device reboot, an app update — without
+  needing to tell these apart: the effect (start clean) is identical
+  either way.
+- The only way for a document to survive past its session is exporting
+  it — sharing it (see [UI Flows](ui-flows.md#5-document-detail)) to
+  wherever the user chooses. Once exported, that copy is outside
+  KeepSheet's own storage; KeepSheet doesn't track which documents have
+  been exported, or treat them specially — everything in the list is
+  equally temporary.
+- This applies the same way to every Document regardless of `source`.
+- A consequence for implementations: a storage schema change never needs
+  to carry old data forward, since nothing is ever worth preserving
+  across a restart anyway — recreating storage from scratch on a schema
+  change is fine.
