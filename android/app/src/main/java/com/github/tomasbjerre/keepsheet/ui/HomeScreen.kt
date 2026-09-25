@@ -38,11 +38,13 @@ import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import kotlinx.coroutines.launch
 
 /**
- * Home screen (see specs/ui-flows.md#1-home). Merge and Document Detail
- * aren't implemented yet (see the note in android/app/build.gradle.kts for
- * the libraries Merge needs), so Merge's action here reports that rather
- * than doing nothing when tapped (#3). Scan (specs/ui-flows.md#2-capture)
- * and Import (specs/ui-flows.md#3-page-review) are implemented.
+ * Home screen (see specs/ui-flows.md#1-home). Merge isn't implemented yet
+ * (see the note in android/app/build.gradle.kts for the libraries it
+ * needs), so its action here reports that rather than doing nothing when
+ * tapped (#3). Scan (specs/ui-flows.md#2-capture), Import
+ * (specs/ui-flows.md#3-page-review), and opening a document
+ * (specs/ui-flows.md#5-document-detail) are implemented. Each row's own
+ * delete action isn't implemented yet — Document Detail's Delete is.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +52,7 @@ fun HomeScreen(
     repository: DocumentRepository,
     onScan: () -> Unit,
     onPhotosSelectedForImport: (List<Uri>) -> Unit,
+    onDocumentSelected: (Long) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -108,7 +111,7 @@ fun HomeScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
                     items(documents, key = { it.id }) { document ->
-                        DocumentRow(document, onClick = { notImplementedYet("Opening a document") })
+                        DocumentRow(document, onClick = { onDocumentSelected(document.id) })
                         HorizontalDivider()
                     }
                 }
