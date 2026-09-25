@@ -84,13 +84,24 @@ No mocking libraries (Mockito, MockK, etc.) — tests exercise real behavior
 against real collaborators instead of mocked ones, so a passing test means
 the requirement actually works, not that a mock was told to say so:
 
-- **Pure logic** (`Formatting`, `naming.FileNameSanitizer`) — plain JUnit
-  Jupiter tests, no framework dependencies.
+- **Pure logic** (`Formatting`, `naming.FileNameSanitizer`,
+  `naming.SuggestedName`) — plain JUnit Jupiter tests, no framework
+  dependencies.
 - **Storage** (`DocumentRepositoryTest`) — runs against a real in-memory
   SQLite database via Room + [Robolectric](http://robolectric.org/), not a
   mocked DAO, verifying every query listed in
   `specs/data-model.md#required-queries` directly, including that deleting
   a document removes its underlying files, not just its database rows.
+- **Orchestration** (`DocumentBuilderTest`) — verifies naming/ordering/
+  persistence for turning a set of page images into one Document, against
+  the same real database, with the actual image decoding/PDF writing
+  (`pdf/ImagesToPdf.kt`) injected as fakes — those need real Android
+  graphics APIs, so they're covered separately, below.
+- **Real image/PDF writing** (`pdf/ImagesToPdfTest`, instrumented) —
+  exercises the actual `BitmapFactory`/`PdfDocument` calls
+  `DocumentBuilderTest` fakes out, on a real device/emulator, since
+  Robolectric's fidelity for real image decoding and PDF byte output isn't
+  something to rely on.
 - **Schema migrations** — see `specs/data-model.md#data-integrity-on-start`:
   a schema change must carry existing data forward, not silently drop it.
   `KeepSheetDatabase` is still schema version 1 (no real user has data
