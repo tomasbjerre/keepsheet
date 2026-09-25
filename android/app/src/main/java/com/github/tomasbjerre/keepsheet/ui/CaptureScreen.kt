@@ -50,6 +50,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,6 +112,12 @@ fun CaptureScreen(
 
     var retakeTargetId by remember { mutableStateOf<String?>(null) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
+    // Gates the shutter: CameraX binding is asynchronous, and on a slow/cold-started
+    // device a tap that lands before it finishes would otherwise silently go nowhere.
+    var cameraReady by remember { mutableStateOf(false) }
+    LaunchedEffect(permission.hasPermission, cameraAvailable) {
+        if (!permission.hasPermission || !cameraAvailable) cameraReady = false
+    }
 
     val onBackRequested = { requestBack(pages.isNotEmpty(), onCancel) { showDiscardConfirm = true } }
     BackHandler(onBack = onBackRequested)
@@ -130,6 +137,8 @@ fun CaptureScreen(
             cameraAvailable = cameraAvailable,
             permission = permission,
             imageCapture = imageCapture,
+            cameraReady = cameraReady,
+            onCameraReady = { cameraReady = true },
             retakeTargetId = retakeTargetId,
             onReorder = onPagesChanged,
             onRetake = { retakeTargetId = it },
@@ -164,6 +173,8 @@ private fun CaptureScreenBody(
     cameraAvailable: Boolean,
     permission: CameraPermissionState,
     imageCapture: ImageCapture,
+    cameraReady: Boolean,
+    onCameraReady: () -> Unit,
     retakeTargetId: String?,
     onReorder: (List<CapturedPage>) -> Unit,
     onRetake: (String) -> Unit,
@@ -184,7 +195,12 @@ private fun CaptureScreenBody(
                         onGrant = permission.onRequest,
                         onOpenSettings = { context.startActivity(appSettingsIntent(context)) },
                     )
-                else -> CameraPreview(imageCapture = imageCapture, modifier = Modifier.fillMaxSize())
+                else ->
+                    CameraPreview(
+                        imageCapture = imageCapture,
+                        onReady = onCameraReady,
+                        modifier = Modifier.fillMaxSize(),
+                    )
             }
             if (retakeTargetId != null) {
                 RetakeBanner(onCancel = onCancelRetake, modifier = Modifier.align(Alignment.TopCenter))
@@ -192,7 +208,7 @@ private fun CaptureScreenBody(
         }
         CaptureThumbnailStrip(pages = pages, onReorder = onReorder, onRetake = onRetake, onRemove = onRemove)
         CaptureActionsRow(
-            canCapture = cameraAvailable && permission.hasPermission,
+            canCapture = cameraAvailable && permission.hasPermission && cameraReady,
             doneEnabled = pages.isNotEmpty(),
             onImport = onImport,
             onShutter = onShutter,
@@ -328,6 +344,7 @@ private fun RefreshPermissionOnResume(onRefresh: () -> Unit) {
 @Composable
 private fun CameraPreview(
     imageCapture: ImageCapture,
+    onReady: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -350,7 +367,11 @@ private fun CameraPreview(
                 }
             val providerFuture = ProcessCameraProvider.getInstance(ctx)
             providerFuture.addListener(
-                { bindCamera(providerFuture.get(), lifecycleOwner, previewView, imageCapture) { cameraProvider = it } },
+                {
+                    bindCamera(providerFuture.get(), lifecycleOwner, previewView, imageCapture, onReady) {
+                        cameraProvider = it
+                    }
+                },
                 ContextCompat.getMainExecutor(ctx),
             )
             previewView
@@ -358,19 +379,25 @@ private fun CameraPreview(
     )
 }
 
+@Suppress("LongParameterList")
 private fun bindCamera(
     provider: ProcessCameraProvider,
     lifecycleOwner: LifecycleOwner,
     previewView: PreviewView,
     imageCapture: ImageCapture,
+    onReady: () -> Unit,
     onBound: (ProcessCameraProvider) -> Unit,
 ) {
     onBound(provider)
     val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
-    runCatching {
-        provider.unbindAll()
-        provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
-    }
+    val result =
+        runCatching {
+            provider.unbindAll()
+            provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
+        }
+    // Only once actually bound — takePicture() on an unbound ImageCapture use case can
+    // silently never call back, so the shutter must stay disabled until this fires.
+    if (result.isSuccess) onReady()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
