@@ -14,6 +14,13 @@ everything happens and stays on your device.
 New to KeepSheet? See the [user manual](docs/user-manual.md) for a
 walkthrough of every screen and control.
 
+## Screenshots
+
+<img src="docs/screenshots/1-home.jpg" alt="Home screen" width="200">
+
+More, covering every screen/state as they're implemented, in
+[`docs/screenshots/`](docs/screenshots/).
+
 ## Structure
 
 - [`specs/`](specs/README.md) — implementation-independent specification
