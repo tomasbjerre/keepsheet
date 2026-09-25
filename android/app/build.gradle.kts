@@ -134,7 +134,7 @@ dependencies {
 
     // Camera capture for specs/capture-and-processing.md#multi-page-capture.
     implementation("androidx.camera:camera-core:1.4.1")
-    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.6.2")
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
 
