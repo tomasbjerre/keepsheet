@@ -1,39 +1,148 @@
 package com.github.tomasbjerre.keepsheet.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.github.tomasbjerre.keepsheet.data.Document
+import com.github.tomasbjerre.keepsheet.data.DocumentRepository
+import kotlinx.coroutines.launch
 
 /**
- * Placeholder Home screen (see specs/ui-flows.md#1-home) — a starting point
- * for the real document list, Scan/Import/Merge actions, and search.
+ * Home screen (see specs/ui-flows.md#1-home). Capture, Page Review, Merge,
+ * and Document Detail aren't implemented yet (see the note in
+ * android/app/build.gradle.kts for the libraries they need), so their
+ * actions here report that rather than doing nothing when tapped (#3).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun KeepSheetApp() {
-    Scaffold { innerPadding ->
+fun KeepSheetApp(repository: DocumentRepository) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var query by remember { mutableStateOf("") }
+
+    val documentsFlow =
+        remember(query) {
+            if (query.isBlank()) repository.observeDocuments() else repository.search(query)
+        }
+    val documents by documentsFlow.collectAsState(initial = emptyList())
+
+    fun notImplementedYet(action: String) {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("$action isn't implemented yet.")
+        }
+    }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("KeepSheet") }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { innerPadding ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(16.dp),
         ) {
-            Text("KeepSheet", style = MaterialTheme.typography.headlineMedium)
-            Text(
-                "No documents yet — tap Scan to create your first PDF.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(onClick = { notImplementedYet("Scan") }, modifier = Modifier.weight(1f)) {
+                    Text("Scan")
+                }
+                Button(onClick = { notImplementedYet("Import") }, modifier = Modifier.weight(1f)) {
+                    Text("Import")
+                }
+                Button(onClick = { notImplementedYet("Merge") }, modifier = Modifier.weight(1f)) {
+                    Text("Merge")
+                }
+            }
+
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Search documents") },
+                singleLine = true,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
             )
+
+            if (documents.isEmpty()) {
+                EmptyState(query)
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
+                    items(documents, key = { it.id }) { document ->
+                        DocumentRow(document, onClick = { notImplementedYet("Opening a document") })
+                        HorizontalDivider()
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun EmptyState(query: String) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(top = 32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            if (query.isBlank()) {
+                "No documents yet — tap Scan to create your first PDF."
+            } else {
+                "No documents match \"$query\"."
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
+private fun DocumentRow(
+    document: Document,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp),
+    ) {
+        Text(document.name, style = MaterialTheme.typography.titleMedium)
+        Text(
+            "${formatDate(document.createdAt)} · ${document.pageCount} pages · ${formatFileSize(document.sizeBytes)}",
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }

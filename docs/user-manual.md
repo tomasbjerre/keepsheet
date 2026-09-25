@@ -10,6 +10,8 @@ description of every screen and control in the meantime._
 
 ## Home
 
+<img src="screenshots/1-home.jpg" alt="Home screen" width="200">
+
 The app's entry point. Shows your documents, most recent first — each row
 with its name, date, page count, and size. Tap a row to open it.
 

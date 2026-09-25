@@ -41,6 +41,32 @@
         "androidx.room:room-compiler"
       ],
       "groupName": "Room (runtime, ktx, compiler)"
+    },
+    {
+      // All androidx.camera artifacts should move together — CameraX
+      // recommends keeping camera-core/camera2/lifecycle/view on the same
+      // version. Grouped so a bump always proposes all four together,
+      // rather than landing one alone (as happened once already: PR #2
+      // bumped only camera-camera2 to 1.6.2, mismatched against the other
+      // three still at 1.4.1).
+      "matchPackageNames": [
+        "androidx.camera:camera-core",
+        "androidx.camera:camera-camera2",
+        "androidx.camera:camera-lifecycle",
+        "androidx.camera:camera-view"
+      ],
+      "groupName": "CameraX (core, camera2, lifecycle, view)"
+    },
+    {
+      // androidx.activity:activity-compose 1.13.0 fails CI on this project with a
+      // dependency resolution conflict (androidx.concurrent:concurrent-futures-ktx
+      // strict-version mismatch via androidx.test, in debugAndroidTestCompileClasspath's
+      // "consistent resolution" — confirmed when PR #1 auto-merged this bump and broke
+      // `./gradlew lintDebug`). Same issue wisp's renovate.json blocks. Re-enable once a
+      // version resolves cleanly against the pinned androidx.test artifacts below.
+      "matchPackageNames": ["androidx.activity:activity-compose"],
+      "enabled": false,
+      "recreateWhen": "never"
     }
   ]
 }

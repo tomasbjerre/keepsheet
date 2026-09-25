@@ -8,12 +8,11 @@ the spec first — it's the source of truth, not this code.
 
 - Kotlin + Jetpack Compose (Material 3), no XML layouts.
 - [Room](https://developer.android.com/training/data-storage/room) for local
-  storage (documents/pages, once implemented — see
-  `specs/data-model.md`).
+  storage (`data/` — Document/Page, see `specs/data-model.md`).
 - [CameraX](https://developer.android.com/training/camerax) for capturing
   pages (`specs/capture-and-processing.md#multi-page-capture`).
 - Still to be added, as the corresponding user stories are implemented (see
-  the `TODO` in `app/build.gradle.kts`):
+  the note in `app/build.gradle.kts`):
   - An edge-detection/perspective-correction library (e.g.
     [OpenCV](https://opencv.org/), Apache 2.0) for
     `specs/capture-and-processing.md#automatic-cropping-and-straightening`.
@@ -85,13 +84,19 @@ No mocking libraries (Mockito, MockK, etc.) — tests exercise real behavior
 against real collaborators instead of mocked ones, so a passing test means
 the requirement actually works, not that a mock was told to say so:
 
-- **Pure logic** — plain JUnit Jupiter tests, no framework dependencies.
-- **Storage** (once Room is wired up) — runs against a real in-memory
+- **Pure logic** (`Formatting`, `naming.FileNameSanitizer`) — plain JUnit
+  Jupiter tests, no framework dependencies.
+- **Storage** (`DocumentRepositoryTest`) — runs against a real in-memory
   SQLite database via Room + [Robolectric](http://robolectric.org/), not a
   mocked DAO, verifying every query listed in
-  `specs/data-model.md#required-queries` directly.
+  `specs/data-model.md#required-queries` directly, including that deleting
+  a document removes its underlying files, not just its database rows.
 - **Schema migrations** — see `specs/data-model.md#data-integrity-on-start`:
   a schema change must carry existing data forward, not silently drop it.
+  `KeepSheetDatabase` is still schema version 1 (no real user has data
+  yet), so there's nothing to migrate — the first schema change must add
+  both an explicit `Migration` and a migration test, the same way wisp's
+  `WispDatabase`/`WispDatabaseMigrationTest` do.
 - Assertions use [AssertJ](https://assertj.github.io/doc/).
 
 Run them with `./gradlew testDebugUnitTest`.
@@ -102,8 +107,8 @@ When you add a requirement to `specs/`, add a test for it here — see
 ### Screenshots
 
 `../.github/workflows/instrumented_android.yml` runs instrumented tests on
-an emulator and pulls any screenshots a `ScreenshotTest` (once one exists —
-see `app/src/androidTest`) writes to `/sdcard/keepsheet-screenshots`, the
+an emulator and pulls any screenshots `ScreenshotTest`
+(`app/src/androidTest`) writes to `/sdcard/keepsheet-screenshots`, the
 same convention the shared release workflow
 ([`bundle-android-release.yaml`](https://github.com/tomasbjerre/.github/blob/master/.github/workflows/bundle-android-release.yaml))
 expects for installing screenshots into the Play listing and
