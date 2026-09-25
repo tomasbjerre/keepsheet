@@ -16,6 +16,7 @@ class MainActivity : ComponentActivity() {
                 KeepSheetApp(
                     repository = (application as KeepSheetApplication).repository,
                     filesDir = filesDir,
+                    cacheDir = cacheDir,
                 )
             }
         }

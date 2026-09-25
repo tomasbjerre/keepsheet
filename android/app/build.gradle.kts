@@ -169,6 +169,9 @@ dependencies {
     // for the Play Store listing and README — see android/README.md#screenshots.
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
+    // GrantPermissionRule, for tests exercising Capture's camera permission flow
+    // without a system permission dialog blocking a headless emulator run.
+    androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestUtil("androidx.test:orchestrator:1.6.1")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
