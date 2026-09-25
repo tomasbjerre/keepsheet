@@ -5,6 +5,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -61,6 +62,11 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Save").performClick()
         awaitTagCount(PAGE_PREVIEW_TEST_TAG, 1)
         screenshot("3-document-detail")
+
+        composeRule.onNodeWithContentDescription("Back").performClick()
+        composeRule.onNodeWithContentDescription("Information").performClick()
+        composeRule.waitForIdle()
+        screenshot("4-information")
     }
 
     private fun awaitEnabled(text: String) {

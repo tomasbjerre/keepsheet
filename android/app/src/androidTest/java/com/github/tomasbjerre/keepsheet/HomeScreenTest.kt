@@ -1,7 +1,9 @@
 package com.github.tomasbjerre.keepsheet
 
+import android.os.Build
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -36,6 +38,20 @@ class HomeScreenTest {
     @Test
     fun showsTheEmptyStateWithNoDocuments() {
         awaitText("No documents yet — tap Scan to create your first PDF.")
+    }
+
+    @Test
+    fun informationDialogShowsVersionDeviceAndLinks() {
+        // See specs/ui-flows.md#feedback-and-support and .github/ISSUE_TEMPLATE/bug_report.yml
+        // — doesn't tap the links themselves, since those leave the app for a browser.
+        composeRule.onNodeWithContentDescription("Information").performClick()
+
+        awaitText("Report a problem or request a feature")
+        composeRule.onNodeWithText("User manual").assertExists()
+        composeRule.onNodeWithText("${Build.MODEL}, Android ${Build.VERSION.RELEASE}").assertExists()
+
+        composeRule.onNodeWithText("Close").performClick()
+        composeRule.onNodeWithText("Report a problem or request a feature").assertDoesNotExist()
     }
 
     // The snackbar shown on tap is posted from a coroutine (see KeepSheetApp),
