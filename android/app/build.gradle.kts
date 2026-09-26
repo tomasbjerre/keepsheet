@@ -17,7 +17,7 @@ plugins {
     id("se.bjurr.gradle.update-versions") version "3.0.1"
     // 3.x, not the latest 4.x, which requires AGP 9 / Gradle 9.1+ — see
     // https://github.com/Triple-T/gradle-play-publisher/releases/tag/4.0.0
-    id("com.github.triplet.play") version "3.13.0"
+    id("com.github.triplet.play") version "4.1.1"
 }
 
 fun runGit(vararg args: String): String {
