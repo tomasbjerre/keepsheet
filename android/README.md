@@ -11,6 +11,10 @@ the spec first — it's the source of truth, not this code.
   storage (`data/` — Document/Page, see `specs/data-model.md`).
 - [CameraX](https://developer.android.com/training/camerax) for capturing
   pages (`specs/capture-and-processing.md#multi-page-capture`).
+- [PdfBox-Android](https://github.com/TomRoush/PdfBox-Android) (Apache 2.0,
+  a port of Apache PDFBox) for merging existing PDFs losslessly —
+  concatenating each source's own pages, text layer included, rather than
+  rasterizing them (`specs/merging.md`).
 - Still to be added, as the corresponding user stories are implemented (see
   the note in `app/build.gradle.kts`):
   - An edge-detection/perspective-correction library (e.g.
@@ -20,8 +24,6 @@ the spec first — it's the source of truth, not this code.
     [Tesseract4Android](https://github.com/adaptech-cz/Tesseract4Android),
     which supports Swedish) for
     `specs/capture-and-processing.md#text-recognition-ocr`.
-  - A PDF library capable of merging existing documents (not just
-    rendering/rasterizing pages) for `specs/merging.md`.
 
 ## Local development setup
 

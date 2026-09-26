@@ -1,6 +1,8 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
+import android.graphics.Bitmap
+import android.graphics.Color
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -13,12 +15,18 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
+import com.github.tomasbjerre.keepsheet.data.DocumentSource
+import com.github.tomasbjerre.keepsheet.pdf.buildPdfFromImages
+import com.github.tomasbjerre.keepsheet.ui.MERGE_PICKER_ROW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * Not a correctness test — drives the real app to capture one screenshot
@@ -67,6 +75,38 @@ class ScreenshotTest {
         composeRule.onNodeWithContentDescription("Information").performClick()
         composeRule.waitForIdle()
         screenshot("4-information")
+        composeRule.onNodeWithText("Close").performClick()
+
+        // A second document, seeded directly (see MergeScreenTest) rather than via a
+        // second full Scan session, just so Merge has two documents to show staged.
+        seedSecondDocument()
+        composeRule.onNodeWithText("Merge").performClick()
+        composeRule.onNodeWithText("From KeepSheet").performClick()
+        awaitTagCount(MERGE_PICKER_ROW_TEST_TAG, 2)
+        // Both rows stay visible (just disabled + checkmarked) once added, so this is
+        // "add row 0, then row 1" — not two clicks racing to add the same one.
+        composeRule.onAllNodesWithTag(MERGE_PICKER_ROW_TEST_TAG)[0].performClick()
+        composeRule.onAllNodesWithTag(MERGE_PICKER_ROW_TEST_TAG)[1].performClick()
+        composeRule.onNodeWithText("Done").performClick()
+        composeRule.waitForIdle()
+        screenshot("5-merge")
+    }
+
+    private fun seedSecondDocument() {
+        val app = composeRule.activity.application as KeepSheetApplication
+        val documentsDir = File(composeRule.activity.filesDir, "documents").apply { mkdirs() }
+        val pdfFile = File(documentsDir, "screenshot-second.pdf")
+        val imageFile = File(documentsDir, "screenshot-second-page-0.jpg")
+        val bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(Color.BLUE)
+        FileOutputStream(imageFile).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
+        bitmap.recycle()
+        buildPdfFromImages(listOf(imageFile.absolutePath), pdfFile)
+        runBlocking {
+            val documentId =
+                app.repository.createDocument(System.currentTimeMillis(), "Second document", pdfFile.absolutePath, DocumentSource.SCANNED)
+            app.repository.finalizeDocument(documentId, 1, pdfFile.length())
+        }
     }
 
     private fun awaitEnabled(text: String) {

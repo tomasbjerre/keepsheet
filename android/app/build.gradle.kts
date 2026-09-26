@@ -140,12 +140,16 @@ dependencies {
     // Uris — no network use, so no INTERNET permission implication.
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    // Merging existing PDFs (specs/merging.md) losslessly — concatenates each source's
+    // own pages (text layer included) rather than rasterizing/re-rendering them, which
+    // android.graphics.pdf.PdfDocument alone can't do. Apache 2.0, port of Apache PDFBox.
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
     // Still needed: an edge-detection/perspective-correction library (e.g. OpenCV) for
-    // specs/capture-and-processing.md#automatic-cropping-and-straightening, an
+    // specs/capture-and-processing.md#automatic-cropping-and-straightening, and an
     // on-device OCR engine (e.g. Tesseract) for
-    // specs/capture-and-processing.md#text-recognition-ocr, and a PDF library capable
-    // of merging existing documents (not just rendering pages) for specs/merging.md,
-    // once those features are implemented.
+    // specs/capture-and-processing.md#text-recognition-ocr, once those features are
+    // implemented.
 
     // Pure logic: plain JUnit Jupiter, no mocks.
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")

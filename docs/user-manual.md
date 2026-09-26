@@ -49,6 +49,8 @@ recognizing text in the background so the document becomes searchable.
 
 ## Merge
 
+<img src="screenshots/5-merge.jpg" alt="Merge screen" width="200">
+
 Opened by **Merge**. Pick two or more existing PDFs — from KeepSheet's own
 documents or from your device — and drag to set the order they'll be
 combined in. Tap **Merge** to produce the combined PDF.

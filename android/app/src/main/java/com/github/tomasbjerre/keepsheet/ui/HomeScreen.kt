@@ -27,8 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -37,7 +35,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,16 +42,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.github.tomasbjerre.keepsheet.data.Document
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
-import kotlinx.coroutines.launch
 
 /**
- * Home screen (see specs/ui-flows.md#1-home). Merge isn't implemented yet
- * (see the note in android/app/build.gradle.kts for the libraries it
- * needs), so its action here reports that rather than doing nothing when
- * tapped (#3). Scan (specs/ui-flows.md#2-capture), Import
- * (specs/ui-flows.md#3-page-review), opening a document
+ * Home screen (see specs/ui-flows.md#1-home). Scan
+ * (specs/ui-flows.md#2-capture), Import (specs/ui-flows.md#3-page-review),
+ * Merge (specs/ui-flows.md#4-merge), opening a document
  * (specs/ui-flows.md#5-document-detail), and the ⓘ Information dialog
- * (specs/ui-flows.md#feedback-and-support) are implemented. Each row's
+ * (specs/ui-flows.md#feedback-and-support) are all implemented. Each row's
  * own delete action isn't implemented yet — Document Detail's Delete is.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,9 +58,8 @@ fun HomeScreen(
     onScan: () -> Unit,
     onPhotosSelectedForImport: (List<Uri>) -> Unit,
     onDocumentSelected: (Long) -> Unit,
+    onMerge: () -> Unit,
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var showInformation by remember { mutableStateOf(false) }
 
@@ -81,15 +74,8 @@ fun HomeScreen(
             if (uris.isNotEmpty()) onPhotosSelectedForImport(uris)
         }
 
-    fun notImplementedYet(action: String) {
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar("$action isn't implemented yet.")
-        }
-    }
-
     Scaffold(
         topBar = { HomeTopBar(onInfoClick = { showInformation = true }) },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         HomeBody(
             innerPadding = innerPadding,
@@ -100,7 +86,7 @@ fun HomeScreen(
             onImport = {
                 photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
-            onMerge = { notImplementedYet("Merge") },
+            onMerge = onMerge,
             onDocumentSelected = onDocumentSelected,
         )
     }
