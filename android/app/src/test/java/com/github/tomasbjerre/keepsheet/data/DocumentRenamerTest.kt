@@ -80,4 +80,27 @@ class DocumentRenamerTest {
             val document = repository.observeDocument(documentId).first()!!
             assertThat(document.name).isEqualTo("Invoice")
         }
+
+    @Test
+    fun `an automatic rename replaces the fallback name`() =
+        runTest {
+            val documentId = repository.createDocument(1_000, "fallback", "/tmp/a.pdf", DocumentSource.SCANNED)
+
+            val text = "Blekinge Bygg AB\nFaktura\n2026-01-02"
+            applySuggestedName(repository, documentId, text, finalizedAt = 1_790_424_000_000L)
+
+            assertThat(repository.observeDocument(documentId).first()!!.name)
+                .isEqualTo("2026-01-02_Invoice_BlekingeBygg")
+        }
+
+    @Test
+    fun `an automatic rename never overwrites a name the user chose`() =
+        runTest {
+            val documentId = repository.createDocument(1_000, "fallback", "/tmp/a.pdf", DocumentSource.SCANNED)
+            renameDocument(repository, documentId, "My own name")
+
+            applySuggestedName(repository, documentId, "Blekinge Bygg AB\nFaktura", finalizedAt = 1_000)
+
+            assertThat(repository.observeDocument(documentId).first()!!.name).isEqualTo("My own name")
+        }
 }

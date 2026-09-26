@@ -20,4 +20,6 @@ data class Document(
     val sizeBytes: Long = 0,
     val searchText: String? = null,
     val source: DocumentSource,
+    /** True once the user renamed it themselves; an automatic rename never overwrites that. */
+    val nameEditedByUser: Boolean = false,
 )

@@ -1,6 +1,7 @@
 package com.github.tomasbjerre.keepsheet.data
 
 import com.github.tomasbjerre.keepsheet.naming.sanitizeForFileName
+import com.github.tomasbjerre.keepsheet.naming.suggestedDocumentName
 import com.github.tomasbjerre.keepsheet.naming.uniqueName
 import kotlinx.coroutines.flow.first
 
@@ -10,10 +11,8 @@ import kotlinx.coroutines.flow.first
  * auto-suggested name is — "doing so never affects any other field". A blank/all-illegal
  * name is ignored rather than clearing the document's name to nothing.
  *
- * Not yet handled: specs/file-naming.md#rules also says an automatic (OCR-driven) rename
- * must never overwrite a name the user already chose — there's no such flag on [Document]
- * yet because OCR-driven renaming isn't implemented (see
- * specs/file-naming.md, still to do).
+ * Marks the document as user-named, so a later automatic (OCR-driven) rename never
+ * overwrites it — see [applySuggestedName].
  */
 suspend fun renameDocument(
     repository: DocumentRepository,
@@ -29,4 +28,25 @@ suspend fun renameDocument(
             .filter { it.id != documentId }
             .map { it.name }
     repository.renameDocument(documentId, uniqueName(sanitized, existingNames))
+}
+
+/**
+ * See specs/file-naming.md#rules: once OCR has finished, silently replaces the fallback
+ * name with one built from the recognized [text] — unless the user already renamed the
+ * document. Collisions get a numeric suffix like any other name.
+ */
+suspend fun applySuggestedName(
+    repository: DocumentRepository,
+    documentId: Long,
+    text: String,
+    finalizedAt: Long,
+) {
+    val existingNames =
+        repository
+            .observeDocuments()
+            .first()
+            .filter { it.id != documentId }
+            .map { it.name }
+    val name = suggestedDocumentName(text, finalizedAt, existingNames)
+    repository.applySuggestedName(documentId, name)
 }

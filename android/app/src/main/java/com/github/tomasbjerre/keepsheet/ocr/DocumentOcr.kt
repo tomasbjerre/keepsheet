@@ -1,11 +1,14 @@
 package com.github.tomasbjerre.keepsheet.ocr
 
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
+import com.github.tomasbjerre.keepsheet.data.applySuggestedName
+import kotlinx.coroutines.flow.first
 
 /**
  * See specs/capture-and-processing.md#text-recognition-ocr: runs after a document is
  * finalized, page by page, storing each page's recognized text and then the document's
- * text (all pages concatenated). Best-effort — a page that fails or has no text just keeps
+ * text (all pages concatenated), then replacing the fallback file name with one suggested
+ * from that text (specs/file-naming.md). Best-effort — a page that fails or has no text just keeps
  * a null `searchText`, and nothing here is ever surfaced to the user as an error.
  *
  * Returns the document's concatenated text, or null if nothing was recognized.
@@ -26,6 +29,9 @@ suspend fun recognizeDocument(
     val documentText = texts.joinToString("\n").ifEmpty { null }
     if (documentText != null) {
         repository.updateSearchText(documentId, documentText)
+        repository.observeDocument(documentId).first()?.let {
+            applySuggestedName(repository, documentId, documentText, it.createdAt)
+        }
     }
     return documentText
 }

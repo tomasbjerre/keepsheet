@@ -11,7 +11,7 @@ import androidx.room.TypeConverters
  * anyway, so a schema change never needs to carry old data forward — see
  * [build]'s fallbackToDestructiveMigration() below.
  */
-@Database(entities = [Document::class, Page::class], version = 1, exportSchema = false)
+@Database(entities = [Document::class, Page::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class KeepSheetDatabase : RoomDatabase() {
     abstract fun documentDao(): DocumentDao

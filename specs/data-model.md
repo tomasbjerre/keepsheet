@@ -15,6 +15,7 @@ PDFs (see [Merging](merging.md)).
 | `id` | identifier | unique per document |
 | `createdAt` | timestamp | when the document was first produced |
 | `name` | text | the file name (without extension); auto-suggested (see [File Naming](file-naming.md)), user-editable at any time |
+| `nameEditedByUser` | boolean | true once the user renamed the document; an automatic rename never overwrites a user-chosen name |
 | `pdfPath` | text | where the produced PDF file lives on-device |
 | `pageCount` | integer | number of pages in the PDF |
 | `sizeBytes` | number | size of the PDF file, for display in the document list |
