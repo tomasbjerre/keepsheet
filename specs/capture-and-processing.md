@@ -40,6 +40,12 @@ photographed at an angle:
 - The detected crop is shown to the user before it's applied, with a
   chance to adjust the corners by hand — automatic detection is a
   starting point, not a silent, unreviewable transformation.
+- Detection assumes the page is lighter than its surroundings and is only
+  accepted when it covers a meaningful part of the photo and is
+  recognizably a quadrilateral whose sides follow the detected region; a
+  page that already fills the frame needs no crop (the full photo is kept).
+- The user can always drag the corners, re-run detection, crop manually
+  when nothing was detected, or choose the full photo (no crop).
 
 ## Document filters
 

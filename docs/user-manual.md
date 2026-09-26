@@ -42,7 +42,7 @@ every page is captured.
 ## Page Review
 
 Reached from Capture, or directly from Home's **Import**. Fine-tune each
-page before saving: adjust its crop, choose a filter (color, grayscale, or
+page before saving: drag the corners of the detected crop (or use **Crop manually** / **Full photo**), choose a filter (color, grayscale, or
 black-and-white), reorder, retake, or remove pages. Tap **Save** to build
 the PDF — KeepSheet suggests a file name automatically, and starts
 recognizing text in the background so the document becomes searchable.
