@@ -1,1 +1,6 @@
-keepsheet 0.0.1
+keepsheet 0.0.2
+- fix: bump version
+- ci: reduce instrumented test flakiness (#43)
+- fix: bump version
+- chore(changelog): updating changelog
+- chore(android): update screenshots and play listing
