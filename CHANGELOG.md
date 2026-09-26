@@ -1,3 +1,13 @@
+## 0.0.2 (2026-09-26)
+
+### Bug Fixes
+
+-  bump version ([b221a](https://github.com/tomasbjerre/keepsheet/commit/b221af50ee9c6ba) Tomas Bjerre)  
+-  bump version ([ebda3](https://github.com/tomasbjerre/keepsheet/commit/ebda3bb4405504e) Tomas Bjerre)  
+
+### Other changes
+
+
 ## 0.0.1 (2026-09-26)
 
 ### Features
