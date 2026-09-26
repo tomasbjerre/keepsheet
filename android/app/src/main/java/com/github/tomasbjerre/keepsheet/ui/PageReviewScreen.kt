@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -87,32 +89,7 @@ fun PageReviewScreen(
 
     Scaffold(
         topBar = { PageReviewTopBar(enabled = !saving, onBack = onCancel) },
-    ) { innerPadding ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp),
-        ) {
-            Text("${pages.size} page(s)")
-            PageThumbnails(pages, selected, onSelect = { selected = it })
-            if (pages.isNotEmpty()) {
-                PageEditor(
-                    uri = pages[selected],
-                    corners = corners[selected],
-                    filter = filters[selected],
-                    detecting = detecting,
-                    onCornersChange = { corners = corners.toMutableList().also { list -> list[selected] = it } },
-                    onRedetect = {
-                        redetect(coroutineScope, context.contentResolver, pages[selected]) { found ->
-                            corners = corners.toMutableList().also { list -> list[selected] = found }
-                        }
-                    },
-                    onPickFilter = { picked -> filters = filters.toMutableList().also { it[selected] = picked } },
-                    onApplyFilterToAll = { filters = List(pages.size) { filters[selected] } },
-                )
-            }
+        bottomBar = {
             SaveButton(
                 enabled = pages.isNotEmpty() && !saving && !detecting,
                 saving = saving,
@@ -139,6 +116,34 @@ fun PageReviewScreen(
                     }
                 },
             )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+        ) {
+            Text("${pages.size} page(s)")
+            PageThumbnails(pages, selected, onSelect = { selected = it })
+            if (pages.isNotEmpty()) {
+                PageEditor(
+                    uri = pages[selected],
+                    corners = corners[selected],
+                    filter = filters[selected],
+                    detecting = detecting,
+                    onCornersChange = { corners = corners.toMutableList().also { list -> list[selected] = it } },
+                    onRedetect = {
+                        redetect(coroutineScope, context.contentResolver, pages[selected]) { found ->
+                            corners = corners.toMutableList().also { list -> list[selected] = found }
+                        }
+                    },
+                    onPickFilter = { picked -> filters = filters.toMutableList().also { it[selected] = picked } },
+                    onApplyFilterToAll = { filters = List(pages.size) { filters[selected] } },
+                )
+            }
         }
     }
 }
@@ -279,7 +284,7 @@ private fun SaveButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         if (saving) {
             CircularProgressIndicator(modifier = Modifier.size(20.dp))

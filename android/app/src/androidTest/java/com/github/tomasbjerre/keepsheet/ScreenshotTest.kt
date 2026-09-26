@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -69,10 +70,10 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Done").performClick()
         awaitEnabled("Save")
         screenshot("6-page-review")
-        composeRule.onNodeWithText("Crop manually").performClick()
+        composeRule.onNodeWithText("Crop manually").performScrollTo().performClick()
         composeRule.waitForIdle()
         screenshot("7-page-review-crop")
-        composeRule.onNodeWithText("Full photo").performClick()
+        composeRule.onNodeWithText("Full photo").performScrollTo().performClick()
         composeRule.onNodeWithText("Save").performClick()
         awaitTagCount(PAGE_PREVIEW_TEST_TAG, 1)
         screenshot("3-document-detail")
