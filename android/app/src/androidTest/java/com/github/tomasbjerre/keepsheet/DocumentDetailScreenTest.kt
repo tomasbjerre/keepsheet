@@ -72,6 +72,7 @@ class DocumentDetailScreenTest {
         composeRule.onNodeWithText("Shutter").performClick()
         awaitThumbnailCount(1)
         composeRule.onNodeWithText("Done").performClick()
+        awaitSaveEnabled()
         composeRule.onNodeWithText("Save").performClick()
         awaitDocumentDetailLoaded()
     }
@@ -97,6 +98,13 @@ class DocumentDetailScreenTest {
     private fun pressBackToHome() {
         composeRule.onNodeWithContentDescription("Back").performClick()
         awaitText("Merge")
+    }
+
+    /** Page Review disables Save until page-edge detection has finished. */
+    private fun awaitSaveEnabled() {
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule.onAllNodes(hasText("Save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     private fun awaitShutterEnabled() {

@@ -15,25 +15,36 @@ import java.io.FileOutputStream
  * once this session ends, so every imported page gets its own persistent
  * copy (see specs/data-model.md#page's `imagePath`).
  *
- * [filter] is applied to the pixels (specs/capture-and-processing.md#document-filters).
- * No crop/straighten is applied yet — see specs/capture-and-processing.md, still to be
- * implemented (an edge-detection library, see android/app/build.gradle.kts).
+ * [corners], when given, are flattened into an upright page first
+ * (specs/capture-and-processing.md#automatic-cropping-and-straightening); then [filter] is
+ * applied to the pixels (specs/capture-and-processing.md#document-filters).
  */
 fun copyImageForPage(
     resolver: ContentResolver,
     source: Uri,
     destination: File,
     filter: PageFilter = PageFilter.COLOR,
+    corners: Corners? = null,
 ) {
     val decoded =
         resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it) }
             ?: error("Could not decode image at $source")
-    val bitmap = filtered(decoded, filter)
+    val bitmap = filtered(cropped(decoded, corners), filter)
     try {
         FileOutputStream(destination).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
     } finally {
         bitmap.recycle()
     }
+}
+
+private fun cropped(
+    bitmap: Bitmap,
+    corners: Corners?,
+): Bitmap {
+    if (corners == null) return bitmap
+    val warped = warpToPage(bitmap, corners)
+    bitmap.recycle()
+    return warped
 }
 
 private fun filtered(
