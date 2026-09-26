@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import com.github.tomasbjerre.keepsheet.data.PageFilter
 import java.io.File
 import java.io.FileOutputStream
 
@@ -14,24 +15,39 @@ import java.io.FileOutputStream
  * once this session ends, so every imported page gets its own persistent
  * copy (see specs/data-model.md#page's `imagePath`).
  *
- * No crop/straighten/filter is applied yet — see
- * specs/capture-and-processing.md, still to be implemented (an
- * edge-detection library, see android/app/build.gradle.kts). The image is
- * stored as captured/imported.
+ * [filter] is applied to the pixels (specs/capture-and-processing.md#document-filters).
+ * No crop/straighten is applied yet — see specs/capture-and-processing.md, still to be
+ * implemented (an edge-detection library, see android/app/build.gradle.kts).
  */
 fun copyImageForPage(
     resolver: ContentResolver,
     source: Uri,
     destination: File,
+    filter: PageFilter = PageFilter.COLOR,
 ) {
-    val bitmap =
+    val decoded =
         resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it) }
             ?: error("Could not decode image at $source")
+    val bitmap = filtered(decoded, filter)
     try {
         FileOutputStream(destination).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
     } finally {
         bitmap.recycle()
     }
+}
+
+private fun filtered(
+    bitmap: Bitmap,
+    filter: PageFilter,
+): Bitmap {
+    if (filter == PageFilter.COLOR) return bitmap
+    val mutable = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+    bitmap.recycle()
+    val pixels = IntArray(mutable.width * mutable.height)
+    mutable.getPixels(pixels, 0, mutable.width, 0, 0, mutable.width, mutable.height)
+    applyFilter(pixels, filter)
+    mutable.setPixels(pixels, 0, mutable.width, 0, 0, mutable.width, mutable.height)
+    return mutable
 }
 
 /**

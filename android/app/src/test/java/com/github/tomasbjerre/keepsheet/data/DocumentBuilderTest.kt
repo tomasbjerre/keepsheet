@@ -25,6 +25,7 @@ class DocumentBuilderTest {
     private lateinit var pagesDir: File
     private lateinit var documentsDir: File
     private val importedPages = mutableListOf<Pair<Int, File>>()
+    private val importedFilters = mutableListOf<PageFilter>()
     private val builtPdfs = mutableListOf<Pair<List<String>, File>>()
 
     @Before
@@ -51,8 +52,9 @@ class DocumentBuilderTest {
             repository = repository,
             pagesDir = pagesDir,
             documentsDir = documentsDir,
-            importPage = { index, destination ->
+            importPage = { index, filter, destination ->
                 importedPages += index to destination
+                importedFilters += filter
                 destination.writeText("fake image $index")
             },
             buildPdf = { paths, destination ->
@@ -114,5 +116,16 @@ class DocumentBuilderTest {
             assertThat(paths).hasSize(2)
             assertThat(File(paths[0]).readText()).isEqualTo("fake image 0")
             assertThat(File(paths[1]).readText()).isEqualTo("fake image 1")
+        }
+
+    @Test
+    fun `stores and applies each page's own filter`() =
+        runTest {
+            val filters = listOf(PageFilter.BLACK_AND_WHITE, PageFilter.COLOR)
+            val documentId =
+                builder().build(pageCount = 2, filters = filters, source = DocumentSource.SCANNED, finalizedAt = 1_000)
+
+            assertThat(repository.getPages(documentId).map { it.filter }).isEqualTo(filters)
+            assertThat(importedFilters).isEqualTo(filters)
         }
 }
