@@ -44,7 +44,7 @@ class PdfMergerTest {
         val destination = File(workDir, "merged.pdf")
 
         val sizeBytes =
-            mergePdfs(context.contentResolver, listOf(Uri.fromFile(first), Uri.fromFile(second)), destination)
+            mergePdfs(context, context.contentResolver, listOf(Uri.fromFile(first), Uri.fromFile(second)), destination)
 
         assertTrue(destination.exists())
         assertEquals(destination.length(), sizeBytes)
@@ -59,7 +59,7 @@ class PdfMergerTest {
         val firstBytesBefore = first.readBytes()
         val secondBytesBefore = second.readBytes()
 
-        mergePdfs(context.contentResolver, listOf(Uri.fromFile(first), Uri.fromFile(second)), File(workDir, "merged.pdf"))
+        mergePdfs(context, context.contentResolver, listOf(Uri.fromFile(first), Uri.fromFile(second)), File(workDir, "merged.pdf"))
 
         assertTrue(first.readBytes().contentEquals(firstBytesBefore))
         assertTrue(second.readBytes().contentEquals(secondBytesBefore))

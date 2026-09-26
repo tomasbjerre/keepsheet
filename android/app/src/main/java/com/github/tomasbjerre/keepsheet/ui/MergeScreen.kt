@@ -1,6 +1,7 @@
 package com.github.tomasbjerre.keepsheet.ui
 
 import android.content.ContentResolver
+import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -110,7 +111,7 @@ fun MergeScreen(
             onMerge = {
                 merging = true
                 coroutineScope.launch {
-                    val documentId = mergeAndSave(sources.map { it.uri }, repository, filesDir, context.contentResolver)
+                    val documentId = mergeAndSave(sources.map { it.uri }, repository, filesDir, context)
                     // See PageReviewScreen's saveAsDocument note: explicit, since onMerged()
                     // navigates and NavController requires the main thread for that.
                     withContext(Dispatchers.Main) {
@@ -157,13 +158,13 @@ private suspend fun mergeAndSave(
     sources: List<Uri>,
     repository: DocumentRepository,
     filesDir: File,
-    contentResolver: ContentResolver,
+    context: Context,
 ): Long {
     val merger =
         DocumentMerger(
             repository = repository,
             documentsDir = File(filesDir, "documents"),
-            mergePdfs = { srcs, destination -> mergePdfs(contentResolver, srcs, destination) },
+            mergePdfs = { srcs, destination -> mergePdfs(context, context.contentResolver, srcs, destination) },
             countPages = { file -> countPdfPages(file) },
         )
     return withContext(Dispatchers.IO) {

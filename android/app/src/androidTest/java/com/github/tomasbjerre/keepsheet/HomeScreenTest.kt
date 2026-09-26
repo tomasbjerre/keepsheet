@@ -13,10 +13,10 @@ import org.junit.runner.RunWith
 
 /**
  * Regression test for #3: Home's Scan/Import/Merge actions must do
- * *something* when tapped (see specs/ui-flows.md#1-home), even before
- * Merge exists — silently doing nothing reads as a broken app, not an
- * unfinished one. Scan and Import now navigate to real screens instead —
- * see CaptureScreenTest for Scan's own behavior once there.
+ * *something* when tapped (see specs/ui-flows.md#1-home) — silently doing
+ * nothing reads as a broken app. Scan, Import, and Merge all navigate to
+ * real screens — see CaptureScreenTest and MergeScreenTest for their own
+ * behavior once there.
  */
 @RunWith(AndroidJUnit4::class)
 class HomeScreenTest {
@@ -30,9 +30,9 @@ class HomeScreenTest {
     }
 
     @Test
-    fun mergeReportsNotImplementedYetInsteadOfDoingNothing() {
+    fun mergeOpensMergeScreen() {
         composeRule.onNodeWithText("Merge").performClick()
-        awaitText("Merge isn't implemented yet.")
+        awaitText("No files selected yet — add at least two PDFs to merge.")
     }
 
     @Test
