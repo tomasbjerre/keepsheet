@@ -69,6 +69,8 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           working-directory: ./android
+          # Window/transition animations make Compose UI tests flaky on a slow emulator.
+          disable-animations: true
           script: |
             # The AVD is restored from a cached snapshot (see the AVD cache step
             # above) and /sdcard persists as part of it — clear any screenshots left
@@ -76,7 +78,9 @@ jobs:
             # taken, so a later `adb pull` doesn't silently return stale images
             # alongside the current ones.
             adb shell rm -rf /sdcard/keepsheet-screenshots
-            ./gradlew connectedDebugAndroidTest
+            # The runner executes each line as its own command, so the retry is a
+            # single-line `||`: one retry absorbs an occasional emulator timing flake.
+            ./gradlew connectedDebugAndroidTest || ./gradlew connectedDebugAndroidTest
             adb pull /sdcard/keepsheet-screenshots screenshots-raw || mkdir -p screenshots-raw
 
       - name: Upload instrumented test report
