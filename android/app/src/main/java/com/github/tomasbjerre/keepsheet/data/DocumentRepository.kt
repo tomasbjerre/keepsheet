@@ -63,6 +63,12 @@ class DocumentRepository(
         documentDao.update(document.copy(searchText = searchText))
     }
 
+    /** Recognized text for one page — see specs/data-model.md#page. */
+    suspend fun updatePageSearchText(
+        pageId: Long,
+        searchText: String?,
+    ) = pageDao.updateSearchText(pageId, searchText)
+
     /** See specs/ui-flows.md#5-document-detail — editable in place at any time. */
     suspend fun renameDocument(
         documentId: Long,

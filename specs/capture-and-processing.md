@@ -78,6 +78,10 @@ the document becomes searchable (see
 - Recognizes text in the device's configured language(s) where supported;
   a document with text in an unsupported language still gets a PDF, it
   just isn't searchable by that text.
+  Swedish and English are supported; any other device language falls
+  back to English recognition.
+- Every page's recognized text is stored on the page, and the document's
+  `searchText` is all pages' text concatenated in page order.
 - Feeds the automatic file name suggestion (see
   [File Naming](file-naming.md)) as well as document search (see
   [Data Model](data-model.md#required-queries)).

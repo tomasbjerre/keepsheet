@@ -3,6 +3,12 @@ package com.github.tomasbjerre.keepsheet
 import android.app.Application
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import com.github.tomasbjerre.keepsheet.data.KeepSheetDatabase
+import com.github.tomasbjerre.keepsheet.ocr.TesseractTextRecognizer
+import com.github.tomasbjerre.keepsheet.ocr.recognizeDocument
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -12,6 +18,18 @@ import kotlinx.coroutines.runBlocking
 class KeepSheetApplication : Application() {
     lateinit var repository: DocumentRepository
         private set
+
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * See specs/capture-and-processing.md#text-recognition-ocr: fire-and-forget after a
+     * document is finalized, so finalizing never waits on OCR and leaving the screen that
+     * saved it doesn't cancel it. Best-effort — failures are swallowed by [recognizeDocument].
+     */
+    fun startTextRecognition(documentId: Long) {
+        val recognizer = TesseractTextRecognizer(this)
+        backgroundScope.launch { recognizeDocument(repository, recognizer, documentId) }
+    }
 
     override fun onCreate() {
         super.onCreate()
