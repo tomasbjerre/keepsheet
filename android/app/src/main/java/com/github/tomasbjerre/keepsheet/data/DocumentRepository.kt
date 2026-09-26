@@ -75,7 +75,21 @@ class DocumentRepository(
         name: String,
     ) {
         val document = documentDao.getById(documentId) ?: return
+        documentDao.update(document.copy(name = name, nameEditedByUser = true))
+    }
+
+    /**
+     * Sets an automatically suggested name — see specs/file-naming.md#rules. Returns false
+     * (changing nothing) if the user already chose a name themselves.
+     */
+    suspend fun applySuggestedName(
+        documentId: Long,
+        name: String,
+    ): Boolean {
+        val document = documentDao.getById(documentId) ?: return false
+        if (document.nameEditedByUser) return false
         documentDao.update(document.copy(name = name))
+        return true
     }
 
     /**

@@ -34,7 +34,7 @@ class DocumentOcrTest {
     fun tearDown() = database.close()
 
     private suspend fun documentWithPages(vararg paths: String): Long {
-        val id = repository.createDocument(1, "doc", "doc.pdf", DocumentSource.SCANNED)
+        val id = repository.createDocument(1_790_424_000_000L, "doc", "doc.pdf", DocumentSource.SCANNED)
         paths.forEachIndexed { i, p -> repository.appendPage(id, i, p, PageFilter.COLOR) }
         return id
     }
@@ -82,4 +82,14 @@ class DocumentOcrTest {
         assertThat(tesseractLanguages(listOf("sv-SE"))).isEqualTo("swe")
         assertThat(tesseractLanguages(listOf("ja"))).isEqualTo("eng")
     }
+
+    @Test
+    fun `finishing recognition renames the document from the recognized text`() =
+        runTest {
+            val id = documentWithPages("a.jpg")
+
+            recognizeDocument(repository, { "Blekinge Bygg AB\nFaktura\n2026-01-02" }, id)
+
+            assertThat(repository.observeDocument(id).first()!!.name).isEqualTo("2026-01-02_Invoice_BlekingeBygg")
+        }
 }

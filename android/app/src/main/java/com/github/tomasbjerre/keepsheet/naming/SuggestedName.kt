@@ -39,3 +39,22 @@ fun uniqueName(
     }
     return "$base ($suffix)"
 }
+
+/**
+ * See specs/file-naming.md: `<date>_<type>_<name>` from recognized page [text], each field
+ * falling back independently (finalize date / `Document` / `Untitled`) when nothing usable
+ * is found. [existingNames] excludes the document being named.
+ */
+fun suggestedDocumentName(
+    text: String,
+    finalizedAt: Long,
+    existingNames: Collection<String>,
+    timeZone: TimeZone = TimeZone.getDefault(),
+): String {
+    val format = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
+    format.timeZone = timeZone
+    val date = findDate(text, finalizedAt, timeZone) ?: format.format(Date(finalizedAt))
+    val type = findDocumentType(text) ?: "Document"
+    val name = findSenderName(text) ?: "Untitled"
+    return uniqueName(sanitizeForFileName("${date}_${type}_$name"), existingNames)
+}
