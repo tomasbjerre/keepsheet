@@ -153,7 +153,7 @@ dependencies {
     // Pure logic: plain JUnit Jupiter, no mocks.
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("org.assertj:assertj-core:3.27.7")
 
     // Repository/Room tests run against a real in-memory database via Robolectric
