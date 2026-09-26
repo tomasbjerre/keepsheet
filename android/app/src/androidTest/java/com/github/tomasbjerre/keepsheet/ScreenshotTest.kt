@@ -67,6 +67,8 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Shutter").performClick()
         awaitTagCount(THUMBNAIL_TEST_TAG, 1)
         composeRule.onNodeWithText("Done").performClick()
+        composeRule.waitForIdle()
+        screenshot("6-page-review")
         composeRule.onNodeWithText("Save").performClick()
         awaitTagCount(PAGE_PREVIEW_TEST_TAG, 1)
         screenshot("3-document-detail")
