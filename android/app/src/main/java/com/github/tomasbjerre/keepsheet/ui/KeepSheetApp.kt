@@ -19,12 +19,13 @@ import java.io.File
 private const val ROUTE_HOME = "home"
 private const val ROUTE_CAPTURE = "capture"
 private const val ROUTE_PAGE_REVIEW = "pageReview"
+private const val ROUTE_MERGE = "merge"
 private const val ARG_DOCUMENT_ID = "documentId"
 private const val ROUTE_DOCUMENT_DETAIL = "documentDetail/{$ARG_DOCUMENT_ID}"
 
 private fun documentDetailRoute(documentId: Long) = "documentDetail/$documentId"
 
-/** See specs/ui-flows.md#navigation. Merge doesn't exist yet. */
+/** See specs/ui-flows.md#navigation. */
 @Composable
 fun KeepSheetApp(
     repository: DocumentRepository,
@@ -38,6 +39,18 @@ fun KeepSheetApp(
         composable(ROUTE_HOME) { HomeRoute(navController, repository, pending) }
         composable(ROUTE_CAPTURE) { CaptureRoute(navController, cacheDir, pending) }
         composable(ROUTE_PAGE_REVIEW) { PageReviewRoute(navController, repository, filesDir, pending) }
+        composable(ROUTE_MERGE) {
+            MergeScreen(
+                repository = repository,
+                filesDir = filesDir,
+                onMerged = { documentId ->
+                    navController.navigate(documentDetailRoute(documentId)) {
+                        popUpTo(ROUTE_HOME) { inclusive = false }
+                    }
+                },
+                onCancel = { navController.popBackStack() },
+            )
+        }
         composable(
             ROUTE_DOCUMENT_DETAIL,
             arguments = listOf(navArgument(ARG_DOCUMENT_ID) { type = NavType.LongType }),
@@ -80,6 +93,7 @@ private fun HomeRoute(
             navController.navigate(ROUTE_PAGE_REVIEW)
         },
         onDocumentSelected = { documentId -> navController.navigate(documentDetailRoute(documentId)) },
+        onMerge = { navController.navigate(ROUTE_MERGE) },
     )
 }
 

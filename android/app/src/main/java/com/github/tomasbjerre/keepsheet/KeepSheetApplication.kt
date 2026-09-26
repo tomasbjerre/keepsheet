@@ -3,6 +3,7 @@ package com.github.tomasbjerre.keepsheet
 import android.app.Application
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import com.github.tomasbjerre.keepsheet.data.KeepSheetDatabase
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -15,6 +16,8 @@ class KeepSheetApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Required once before any PdfBox-Android call — see specs/merging.md.
+        PDFBoxResourceLoader.init(this)
         val database = KeepSheetDatabase.build(this)
         repository = DocumentRepository(database.documentDao(), database.pageDao())
 

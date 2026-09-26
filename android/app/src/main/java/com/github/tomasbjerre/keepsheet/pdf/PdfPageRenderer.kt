@@ -26,6 +26,15 @@ fun renderPdfPageThumbnails(
     }
 }
 
+/** See specs/data-model.md#document — `pageCount` is stored, not recomputed on every
+ * read, so a freshly built (e.g. merged, see specs/merging.md#result) PDF needs this
+ * once to learn how many pages it ended up with. */
+fun countPdfPages(pdfFile: File): Int {
+    ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
+        PdfRenderer(descriptor).use { renderer -> return renderer.pageCount }
+    }
+}
+
 private fun PdfRenderer.Page.renderThumbnail(maxDimensionPx: Int): Bitmap {
     val scale = maxDimensionPx.toFloat() / maxOf(width, height)
     val bitmap =
