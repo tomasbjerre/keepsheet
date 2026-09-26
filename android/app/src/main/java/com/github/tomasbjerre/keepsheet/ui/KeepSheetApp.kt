@@ -31,6 +31,7 @@ fun KeepSheetApp(
     repository: DocumentRepository,
     filesDir: File,
     cacheDir: File,
+    onDocumentFinalized: (documentId: Long) -> Unit = {},
 ) {
     val navController = rememberNavController()
     val pending = remember { PendingCapture() }
@@ -38,7 +39,9 @@ fun KeepSheetApp(
     NavHost(navController = navController, startDestination = ROUTE_HOME) {
         composable(ROUTE_HOME) { HomeRoute(navController, repository, pending) }
         composable(ROUTE_CAPTURE) { CaptureRoute(navController, cacheDir, pending) }
-        composable(ROUTE_PAGE_REVIEW) { PageReviewRoute(navController, repository, filesDir, pending) }
+        composable(ROUTE_PAGE_REVIEW) {
+            PageReviewRoute(navController, repository, filesDir, pending, onDocumentFinalized)
+        }
         composable(ROUTE_MERGE) {
             MergeScreen(
                 repository = repository,
@@ -125,6 +128,7 @@ private fun PageReviewRoute(
     repository: DocumentRepository,
     filesDir: File,
     pending: PendingCapture,
+    onDocumentFinalized: (Long) -> Unit,
 ) {
     PageReviewScreen(
         pages = pending.pages,
@@ -132,6 +136,7 @@ private fun PageReviewRoute(
         repository = repository,
         filesDir = filesDir,
         onSaved = { documentId ->
+            onDocumentFinalized(documentId)
             pending.pages = emptyList()
             pending.capturedPages = emptyList()
             navController.navigate(documentDetailRoute(documentId)) {

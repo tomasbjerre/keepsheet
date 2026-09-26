@@ -145,11 +145,13 @@ dependencies {
     // android.graphics.pdf.PdfDocument alone can't do. Apache 2.0, port of Apache PDFBox.
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
+    // On-device OCR for specs/capture-and-processing.md#text-recognition-ocr. Trained
+    // data (tessdata_fast: eng, swe) is bundled in src/main/assets/tessdata.
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
+
     // Still needed: an edge-detection/perspective-correction library (e.g. OpenCV) for
-    // specs/capture-and-processing.md#automatic-cropping-and-straightening, and an
-    // on-device OCR engine (e.g. Tesseract) for
-    // specs/capture-and-processing.md#text-recognition-ocr, once those features are
-    // implemented.
+    // specs/capture-and-processing.md#automatic-cropping-and-straightening, once that
+    // feature is implemented.
 
     // Pure logic: plain JUnit Jupiter, no mocks.
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")

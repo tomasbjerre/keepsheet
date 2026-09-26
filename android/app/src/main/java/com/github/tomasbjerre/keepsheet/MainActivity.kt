@@ -13,8 +13,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             KeepSheetTheme {
+                val app = application as KeepSheetApplication
                 KeepSheetApp(
-                    repository = (application as KeepSheetApplication).repository,
+                    repository = app.repository,
+                    onDocumentFinalized = app::startTextRecognition,
                     filesDir = filesDir,
                     cacheDir = cacheDir,
                 )

@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.first
  * Not yet handled: specs/file-naming.md#rules also says an automatic (OCR-driven) rename
  * must never overwrite a name the user already chose — there's no such flag on [Document]
  * yet because OCR-driven renaming isn't implemented (see
- * specs/capture-and-processing.md#text-recognition-ocr, still to do).
+ * specs/file-naming.md, still to do).
  */
 suspend fun renameDocument(
     repository: DocumentRepository,
