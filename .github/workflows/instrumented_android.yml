@@ -79,6 +79,15 @@ jobs:
             ./gradlew connectedDebugAndroidTest
             adb pull /sdcard/keepsheet-screenshots screenshots-raw || mkdir -p screenshots-raw
 
+      - name: Upload instrumented test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: instrumented-test-report
+          path: android/app/build/reports/androidTests/connected
+          retention-days: 3
+          if-no-files-found: warn
+
       - name: Upload screenshots
         uses: actions/upload-artifact@v7
         with:
