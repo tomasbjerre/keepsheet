@@ -353,6 +353,7 @@ private fun CropSection(
     onRedetect: () -> Unit,
     onRotate: (Int) -> Unit,
 ) {
+    var showViewer by remember { mutableStateOf(false) }
     Column(modifier = Modifier.padding(top = 8.dp)) {
         CropEditor(
             uri = uri,
@@ -379,8 +380,12 @@ private fun CropSection(
                 Text("Crop manually")
             }
             TextButton(onClick = { onCornersChange(null) }, enabled = corners != null) { Text("Full photo") }
+            TextButton(onClick = { showViewer = true }) { Text("View full size") }
         }
         RotateControls(rotationDegrees = rotationDegrees, onRotate = onRotate)
+    }
+    if (showViewer) {
+        PhotoViewerDialog(uri = uri, rotationDegrees = rotationDegrees, onDismiss = { showViewer = false })
     }
 }
 

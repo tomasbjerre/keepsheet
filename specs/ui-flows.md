@@ -84,6 +84,11 @@ Reached from Capture's Done action, or directly from Home's Import.
   inspected up close rather than only at the preview's normal size.
   Zooming in doesn't interfere with dragging a crop corner: a single-finger
   drag still moves a grabbed corner, and only pans the image otherwise.
+- An **open full-screen** action on the crop preview shows the currently
+  selected page by itself — full-screen, no crop overlay, nothing to
+  accidentally drag — with the same pinch-to-zoom and drag-to-pan as the
+  crop preview, for a closer look without the risk of moving a crop
+  corner while doing it.
 - A **Save** action finalizes the document: builds the PDF from the pages
   in their current order/filters, creates a
   [Document](data-model.md#document) with an automatically suggested name

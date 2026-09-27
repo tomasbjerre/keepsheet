@@ -11,6 +11,7 @@ import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -18,6 +19,7 @@ import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.github.tomasbjerre.keepsheet.ui.PHOTO_VIEWER_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.REVIEW_THUMBNAIL_TEST_TAG
 import org.hamcrest.CoreMatchers.anyOf
 import org.junit.After
@@ -27,8 +29,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Exercises Page Review's per-page thumbnail selection (see specs/ui-flows.md#3-page-review).
- * Reached via Home's Import (real sample pages, see keepsheet#55/SamplePages), the same
+ * Exercises Page Review's per-page thumbnail selection and full-screen photo viewer (see
+ * specs/ui-flows.md#3-page-review). Reached via Home's Import (real sample pages, see
+ * keepsheet#55/SamplePages), the same
  * ActivityResult-stubbing approach InstructionVideoTest uses, so this needs no camera
  * permission. The reorder drag's own math (PageReviewScreen's computeReviewDrag/moved) is
  * covered separately by the plain JVM PageReviewDragTest — driving the actual long-press
@@ -68,6 +71,19 @@ class PageReviewScreenTest {
         composeRule.onNodeWithText("2 page(s)").performScrollTo()
         composeRule.onAllNodesWithTag(REVIEW_THUMBNAIL_TEST_TAG)[0].performClick()
         composeRule.onNodeWithText("Color").performScrollTo().assertIsSelected()
+    }
+
+    /** See specs/ui-flows.md#3-page-review (keepsheet#67): a read-only full-screen view of
+     * the selected page, opened and closed from the crop section. */
+    @Test
+    fun viewFullSizeOpensAndClosesThePhotoViewer() {
+        importTwoSamplePages()
+
+        composeRule.onNodeWithText("View full size").performScrollTo().performClick()
+        composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertExists()
+
+        composeRule.onNodeWithContentDescription("Close").performClick()
+        composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertDoesNotExist()
     }
 
     private fun importTwoSamplePages() {
