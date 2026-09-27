@@ -17,7 +17,6 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,7 +41,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -58,19 +55,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -82,7 +74,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
-import kotlin.math.roundToInt
 
 /**
  * See specs/ui-flows.md#2-capture and specs/capture-and-processing.md#multi-page-capture.
@@ -97,6 +88,10 @@ import kotlin.math.roundToInt
  * Camera-only — no Import action of its own (see
  * specs/capture-and-processing.md#multi-page-capture). Importing existing photos is
  * Home's separate Import flow, straight into Page Review.
+ *
+ * Deliberately minimal — a page can only be captured or removed here, no reorder or
+ * retake (see specs/capture-and-processing.md#multi-page-capture). Reorder is Page
+ * Review's job; to fix a bad shot, remove it and capture a new one.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +111,6 @@ fun CaptureScreen(
     val cameraAvailable = remember { context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) }
     val permission = rememberCameraPermissionState(context)
 
-    var retakeTargetId by remember { mutableStateOf<String?>(null) }
     var showDiscardConfirm by remember { mutableStateOf(false) }
     // Gates the shutter: CameraX binding is asynchronous, and on a slow/cold-started
     // device a tap that lands before it finishes would otherwise silently go nowhere.
@@ -140,14 +134,8 @@ fun CaptureScreen(
             imageCapture = imageCapture,
             cameraReady = cameraReady,
             onCameraReady = { cameraReady = true },
-            retakeTargetId = retakeTargetId,
-            onReorder = onPagesChanged,
-            onRetake = { retakeTargetId = it },
-            onCancelRetake = { retakeTargetId = null },
             onRemove = { id -> removePage(id, pages, onPagesChanged) },
-            onShutter = {
-                env.captureShot(pages, onPagesChanged, retakeTargetId) { retakeTargetId = null }
-            },
+            onShutter = { env.captureShot(pages, onPagesChanged) },
             onDone = { onDone(pages.map { it.uri }) },
         )
     }
@@ -173,10 +161,6 @@ private fun CaptureScreenBody(
     imageCapture: ImageCapture,
     cameraReady: Boolean,
     onCameraReady: () -> Unit,
-    retakeTargetId: String?,
-    onReorder: (List<CapturedPage>) -> Unit,
-    onRetake: (String) -> Unit,
-    onCancelRetake: () -> Unit,
     onRemove: (String) -> Unit,
     onShutter: () -> Unit,
     onDone: () -> Unit,
@@ -200,11 +184,8 @@ private fun CaptureScreenBody(
                         modifier = Modifier.fillMaxSize(),
                     )
             }
-            if (retakeTargetId != null) {
-                RetakeBanner(onCancel = onCancelRetake, modifier = Modifier.align(Alignment.TopCenter))
-            }
         }
-        CaptureThumbnailStrip(pages = pages, onReorder = onReorder, onRetake = onRetake, onRemove = onRemove)
+        CaptureThumbnailStrip(pages = pages, onRemove = onRemove)
         CaptureActionsRow(
             canCapture = cameraAvailable && permission.hasPermission && cameraReady,
             doneEnabled = pages.isNotEmpty(),
@@ -255,30 +236,24 @@ private class CaptureEnvironment(
 private fun CaptureEnvironment.captureShot(
     pages: List<CapturedPage>,
     onPagesChanged: (List<CapturedPage>) -> Unit,
-    retakeTargetId: String?,
-    onRetakeHandled: () -> Unit,
 ) {
     val targetFile = File(captureDir, "${UUID.randomUUID()}.jpg")
-    val id = retakeTargetId ?: UUID.randomUUID().toString()
     val outputOptions = ImageCapture.OutputFileOptions.Builder(targetFile).build()
     imageCapture.takePicture(
         outputOptions,
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                val newPage = CapturedPage(id = id, uri = Uri.fromFile(targetFile), ownedFile = targetFile)
-                val existingIndex = pages.indexOfFirst { it.id == id }
-                if (existingIndex >= 0) {
-                    pages[existingIndex].ownedFile?.delete()
-                    onPagesChanged(pages.toMutableList().also { it[existingIndex] = newPage })
-                } else {
-                    onPagesChanged(pages + newPage)
-                }
-                onRetakeHandled()
+                val newPage =
+                    CapturedPage(
+                        id = UUID.randomUUID().toString(),
+                        uri = Uri.fromFile(targetFile),
+                        ownedFile = targetFile,
+                    )
+                onPagesChanged(pages + newPage)
             }
 
             override fun onError(exception: ImageCaptureException) {
-                onRetakeHandled()
                 coroutineScope.launch { snackbarHostState.showSnackbar("Couldn't capture that page — try again.") }
             }
         },
@@ -446,23 +421,6 @@ private fun CameraPermissionRationale(
     }
 }
 
-@Composable
-private fun RetakeBanner(
-    onCancel: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(modifier = modifier.padding(8.dp), tonalElevation = 4.dp) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text("Retaking — tap the shutter for a new shot", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = onCancel) { Text("Cancel") }
-        }
-    }
-}
-
 private val THUMBNAIL_SIZE = 72.dp
 private val THUMBNAIL_SPACING = 8.dp
 
@@ -472,8 +430,6 @@ const val THUMBNAIL_TEST_TAG = "capture-thumbnail"
 @Composable
 private fun CaptureThumbnailStrip(
     pages: List<CapturedPage>,
-    onReorder: (List<CapturedPage>) -> Unit,
-    onRetake: (String) -> Unit,
     onRemove: (String) -> Unit,
 ) {
     if (pages.isEmpty()) {
@@ -485,85 +441,21 @@ private fun CaptureThumbnailStrip(
         return
     }
 
-    val density = LocalDensity.current
-    val itemExtentPx = with(density) { (THUMBNAIL_SIZE + THUMBNAIL_SPACING).toPx() }
-    var draggingId by remember { mutableStateOf<String?>(null) }
-    var dragOffsetPx by remember { mutableStateOf(0f) }
-
     LazyRow(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(THUMBNAIL_SPACING),
     ) {
         itemsIndexed(pages, key = { _, page -> page.id }) { _, page ->
-            val isDragging = page.id == draggingId
-            Box(
-                modifier =
-                    Modifier
-                        .size(THUMBNAIL_SIZE)
-                        .testTag(THUMBNAIL_TEST_TAG)
-                        .graphicsLayer { translationX = if (isDragging) dragOffsetPx else 0f }
-                        .zIndex(if (isDragging) 1f else 0f)
-                        .pointerInput(page.id, pages) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = {
-                                    draggingId = page.id
-                                    dragOffsetPx = 0f
-                                },
-                                onDragEnd = {
-                                    draggingId = null
-                                    dragOffsetPx = 0f
-                                },
-                                onDragCancel = {
-                                    draggingId = null
-                                    dragOffsetPx = 0f
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    val result =
-                                        computeThumbnailDrag(dragAmount, dragOffsetPx, page, pages, itemExtentPx)
-                                    dragOffsetPx = result.offsetPx
-                                    result.reordered?.let(onReorder)
-                                },
-                            )
-                        },
-            ) {
-                CaptureThumbnail(page = page, onRetake = { onRetake(page.id) }, onRemove = { onRemove(page.id) })
+            Box(modifier = Modifier.size(THUMBNAIL_SIZE).testTag(THUMBNAIL_TEST_TAG)) {
+                CaptureThumbnail(page = page, onRemove = { onRemove(page.id) })
             }
         }
     }
 }
 
-private data class ThumbnailDragResult(
-    val offsetPx: Float,
-    val reordered: List<CapturedPage>?,
-)
-
-/** Pure so it's easy to reason about: given how far the drag has moved so far, decide
- * whether the dragged page has crossed into a neighboring slot and, if so, return pages
- * reordered accordingly (and the offset renormalized to that new slot). */
-private fun computeThumbnailDrag(
-    dragAmount: Offset,
-    currentOffsetPx: Float,
-    page: CapturedPage,
-    pages: List<CapturedPage>,
-    itemExtentPx: Float,
-): ThumbnailDragResult {
-    val newOffset = currentOffsetPx + dragAmount.x
-    val currentIndex = pages.indexOfFirst { it.id == page.id }
-    if (currentIndex == -1) return ThumbnailDragResult(newOffset, null)
-    val slotShift = (newOffset / itemExtentPx).roundToInt()
-    val targetIndex = (currentIndex + slotShift).coerceIn(0, pages.lastIndex)
-    if (targetIndex == currentIndex) return ThumbnailDragResult(newOffset, null)
-    val reordered = pages.toMutableList()
-    val moved = reordered.removeAt(currentIndex)
-    reordered.add(targetIndex, moved)
-    return ThumbnailDragResult(newOffset - (targetIndex - currentIndex) * itemExtentPx, reordered)
-}
-
 @Composable
 private fun CaptureThumbnail(
     page: CapturedPage,
-    onRetake: () -> Unit,
     onRemove: () -> Unit,
 ) {
     Box(modifier = Modifier.size(THUMBNAIL_SIZE)) {
@@ -573,12 +465,6 @@ private fun CaptureThumbnail(
             modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.4f)),
         ) {
             Icon(Icons.Default.Close, contentDescription = "Remove page", tint = Color.White)
-        }
-        IconButton(
-            onClick = onRetake,
-            modifier = Modifier.align(Alignment.BottomEnd).size(24.dp).background(Color.Black.copy(alpha = 0.4f)),
-        ) {
-            Icon(Icons.Default.Refresh, contentDescription = "Retake page", tint = Color.White)
         }
     }
 }

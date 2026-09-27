@@ -10,7 +10,7 @@ body:
 
         - **Home** — the document list and the Scan/Import/Merge actions.
         - **Capture** — the live camera view used while scanning pages.
-        - **Page Review** — reordering, retaking, and filtering captured pages before saving.
+        - **Page Review** — reordering and filtering captured pages before saving.
         - **Merge** — picking and ordering existing PDFs to combine.
         - **Document Detail** — the view, share, rename, and delete screen for one document.
 
@@ -26,7 +26,7 @@ body:
       options:
         - Home (document list / Scan / Import / Merge)
         - Capture (live camera scanning)
-        - Page Review (reorder / retake / filter)
+        - Page Review (reorder / filter)
         - Merge (picking and ordering PDFs)
         - Document Detail (a saved document)
         - Not tied to a specific screen / a new screen
@@ -43,7 +43,7 @@ body:
       label: What would you like to happen?
       description: >
         Describe the change. If it involves an existing control, use its
-        name — e.g. **Scan**, **Import**, **Merge**, **Retake**, **Save**,
+        name — e.g. **Scan**, **Import**, **Merge**, **Save**,
         **Share**, or **Delete**.
 
   - type: textarea
