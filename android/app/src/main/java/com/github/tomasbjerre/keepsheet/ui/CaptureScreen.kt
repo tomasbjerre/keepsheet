@@ -9,7 +9,6 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -41,7 +40,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -95,6 +93,10 @@ import kotlin.math.roundToInt
  * The live preview has no edge-detection overlay yet — that depends on an
  * edge-detection library (see android/app/build.gradle.kts), not added yet. Crop
  * fine-tuning and filters are Page Review's job (also not implemented yet).
+ *
+ * Camera-only — no Import action of its own (see
+ * specs/capture-and-processing.md#multi-page-capture). Importing existing photos is
+ * Home's separate Import flow, straight into Page Review.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,11 +128,6 @@ fun CaptureScreen(
     val onBackRequested = { requestBack(pages.isNotEmpty(), onCancel) { showDiscardConfirm = true } }
     BackHandler(onBack = onBackRequested)
 
-    val photoPickerLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
-            if (uris.isNotEmpty()) onPagesChanged(pages + uris.toCapturedPages())
-        }
-
     Scaffold(
         topBar = { CaptureTopBar(onBack = onBackRequested) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -148,9 +145,6 @@ fun CaptureScreen(
             onRetake = { retakeTargetId = it },
             onCancelRetake = { retakeTargetId = null },
             onRemove = { id -> removePage(id, pages, onPagesChanged) },
-            onImport = {
-                photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            },
             onShutter = {
                 env.captureShot(pages, onPagesChanged, retakeTargetId) { retakeTargetId = null }
             },
@@ -184,7 +178,6 @@ private fun CaptureScreenBody(
     onRetake: (String) -> Unit,
     onCancelRetake: () -> Unit,
     onRemove: (String) -> Unit,
-    onImport: () -> Unit,
     onShutter: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -192,7 +185,8 @@ private fun CaptureScreenBody(
     Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
-                !cameraAvailable -> CaptureMessage("This device has no camera. Use Import below to add pages instead.")
+                !cameraAvailable ->
+                    CaptureMessage("This device has no camera. Go back and use Import from Home to add pages instead.")
                 !permission.hasPermission ->
                     CameraPermissionRationale(
                         permanentlyDenied = permission.permanentlyDenied,
@@ -214,7 +208,6 @@ private fun CaptureScreenBody(
         CaptureActionsRow(
             canCapture = cameraAvailable && permission.hasPermission && cameraReady,
             doneEnabled = pages.isNotEmpty(),
-            onImport = onImport,
             onShutter = onShutter,
             onDone = onDone,
         )
@@ -247,9 +240,6 @@ private fun removePage(
     pages.firstOrNull { it.id == id }?.ownedFile?.delete()
     onPagesChanged(pages.filterNot { it.id == id })
 }
-
-private fun List<Uri>.toCapturedPages(): List<CapturedPage> =
-    map { uri -> CapturedPage(id = UUID.randomUUID().toString(), uri = uri, ownedFile = null) }
 
 /** Bundles Capture's stable, environment-level dependencies (as opposed to per-call state
  * like the current page list), so call sites don't have to thread all five through every
@@ -444,7 +434,7 @@ private fun CameraPermissionRationale(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            "KeepSheet needs camera access to scan pages. You can still add pages with Import below.",
+            "KeepSheet needs camera access to scan pages. Go back and use Import from Home instead.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
@@ -488,7 +478,7 @@ private fun CaptureThumbnailStrip(
 ) {
     if (pages.isEmpty()) {
         Text(
-            "No pages yet — tap the shutter or Import to add one.",
+            "No pages yet — tap the shutter to add one.",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(16.dp),
         )
@@ -597,7 +587,6 @@ private fun CaptureThumbnail(
 private fun CaptureActionsRow(
     canCapture: Boolean,
     doneEnabled: Boolean,
-    onImport: () -> Unit,
     onShutter: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -605,7 +594,6 @@ private fun CaptureActionsRow(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        OutlinedButton(onClick = onImport, modifier = Modifier.weight(1f)) { Text("Import") }
         Button(
             onClick = onShutter,
             enabled = canCapture,

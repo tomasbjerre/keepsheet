@@ -31,7 +31,6 @@ import com.github.tomasbjerre.keepsheet.ui.CROP_EDITOR_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.FILTER_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.MERGE_PICKER_ROW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
-import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.anyOf
 import org.junit.After
@@ -51,12 +50,14 @@ import java.io.File
  * suite — so what plays back is a coherent demo, not incidental test noise from
  * unrelated tests.
  *
- * Import (rather than the live Shutter) is used to get pages into the session so the
- * video shows a real, recognizable document (keepsheet#55's photographed brochure
- * pages) instead of the emulator's synthetic webcam test pattern — the system photo
- * picker itself isn't driven (its UI varies by API level/OEM and would make this
- * flaky), its ActivityResult is stubbed with Espresso Intents to return real sample
- * pages directly, the same outcome a person picking real photos would produce.
+ * Capture (Scan) is shown briefly for the live camera view, then Home's Import
+ * (Capture has no Import of its own — see specs/capture-and-processing.md#multi-page-capture)
+ * is used to get pages into the session so the video shows a real, recognizable
+ * document (keepsheet#55's photographed brochure pages) instead of the emulator's
+ * synthetic webcam test pattern — the system photo picker itself isn't driven (its UI
+ * varies by API level/OEM and would make this flaky), its ActivityResult is stubbed
+ * with Espresso Intents to return real sample pages directly, the same outcome a
+ * person picking real photos would produce.
  *
  * [pause] briefly holds each interesting state so a human watching the recording can
  * actually see it, rather than the walkthrough flashing past at test speed.
@@ -87,12 +88,13 @@ class InstructionVideoTest {
         composeRule.waitForIdle()
         pause()
 
-        stubPhotoPickerWith(SamplePages.COVER)
-        composeRule.onNodeWithText("Import").performClick()
-        awaitTagCount(THUMBNAIL_TEST_TAG, 1)
+        // Capture is camera-only (no Import of its own) — back to Home to seed the
+        // session's pages via Home's Import instead.
+        composeRule.onNodeWithContentDescription("Back").performClick()
         pause()
 
-        composeRule.onNodeWithText("Done").performClick()
+        stubPhotoPickerWith(SamplePages.COVER)
+        composeRule.onNodeWithText("Import").performClick()
         awaitEnabled("Save")
         pause(LONG_PAUSE_MILLIS)
 
@@ -153,7 +155,7 @@ class InstructionVideoTest {
     }
 
     /**
-     * Stubs the next `PickMultipleVisualMedia` ActivityResult (Capture's Import button)
+     * Stubs the next `PickMultipleVisualMedia` ActivityResult (Home's Import button)
      * to return [assetNames] copied out of this test APK's own assets as the picked
      * pages — the same outcome a person picking real photos from their gallery would
      * produce, without depending on the system photo picker's own UI.
