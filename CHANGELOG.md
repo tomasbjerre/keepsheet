@@ -1,3 +1,12 @@
+## 0.1.1 (2026-09-27)
+
+### Bug Fixes
+
+-  bump version ([75344](https://github.com/tomasbjerre/keepsheet/commit/75344ec09a7a27f) Tomas Bjerre)  
+
+### Other changes
+
+
 ## 0.1.0 (2026-09-27)
 
 ### Features
