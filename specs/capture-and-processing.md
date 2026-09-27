@@ -51,6 +51,27 @@ photographed at an angle:
 - The user can always drag the corners, re-run detection, crop manually
   when nothing was detected, or choose the full photo (no crop).
 
+## Page rotation
+
+On top of a photo's own orientation (above), a person can rotate an
+individual page in 90° steps — for content that still isn't right-side up
+even once EXIF orientation is applied, or that the person simply wants
+turned a different way:
+
+- Chosen per page in Page Review (see [UI Flows](ui-flows.md#3-page-review)),
+  independently of the other pages in the same document, defaulting to no
+  rotation (0°).
+- Rotating shows the effect immediately in that page's crop preview — what
+  will be applied to the saved page is never a guess.
+- Rotating a page whose crop was already set (detected or adjusted by hand)
+  clears it back to "full photo": that crop was chosen against the old
+  orientation and would grab the wrong region once rotated, so the page's
+  edges are detected or adjusted again after rotating.
+- Applied once, baked into the page's saved image (see
+  [Data Model](data-model.md#page)) the same way for every view that shows
+  that page — Page Review after saving, Document Detail, and the finalized
+  PDF all show the identical, already-rotated result.
+
 ## Document filters
 
 Each page can have one of three filters applied, independently of the

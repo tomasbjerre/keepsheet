@@ -39,8 +39,9 @@ per-page record (see [Merging](merging.md)).
 | `id` | identifier | unique per page |
 | `documentId` | identifier | foreign key to Document |
 | `sequence` | integer | ordering within the document |
-| `imagePath` | text | the processed (cropped, straightened, filtered) image this page was built from |
+| `imagePath` | text | the processed (cropped, straightened, rotated, filtered) image this page was built from |
 | `filter` | enum: `color`, `grayscale`, `blackAndWhite` | the document filter applied (see [Capture & Processing](capture-and-processing.md#document-filters)) |
+| `rotationDegrees` | integer: `0`, `90`, `180`, `270` | the user-chosen rotation applied on top of the photo's own orientation (see [Capture & Processing](capture-and-processing.md#page-rotation)); `0` by default |
 | `searchText` | text, nullable | recognized text for this page alone; null if OCR hasn't completed or found nothing |
 
 ## Required queries

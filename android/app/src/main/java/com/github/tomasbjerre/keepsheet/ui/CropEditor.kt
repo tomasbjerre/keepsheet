@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.tomasbjerre.keepsheet.pdf.Corners
 import com.github.tomasbjerre.keepsheet.pdf.Point
+import com.github.tomasbjerre.keepsheet.pdf.applyRotation
 import com.github.tomasbjerre.keepsheet.pdf.decodeScaled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,17 +40,27 @@ private const val GRAB_RADIUS_DP = 40
  * specs/ui-flows.md#3-page-review: the detected crop is visible before it's applied, and
  * each corner can be dragged to adjust it. With null [corners] (nothing detected, or the
  * user chose the full photo) the whole photo is shown with no overlay.
+ *
+ * [rotationDegrees] (specs/capture-and-processing.md#page-rotation) is applied to the
+ * preview itself, not just remembered — the whole point of showing it live here is that
+ * what will be applied to the saved page is never a guess (keepsheet#52).
  */
 @Composable
 fun CropEditor(
     uri: Uri,
     corners: Corners?,
+    rotationDegrees: Int,
     onCornersChange: (Corners) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val resolver = LocalContext.current.contentResolver
-    val image by produceState<ImageBitmap?>(null, uri) {
-        value = withContext(Dispatchers.IO) { decodeScaled(resolver, uri, PREVIEW_MAX_SIDE)?.asImageBitmap() }
+    val image by produceState<ImageBitmap?>(null, uri, rotationDegrees) {
+        value =
+            withContext(Dispatchers.IO) {
+                decodeScaled(resolver, uri, PREVIEW_MAX_SIDE)
+                    ?.let { applyRotation(it, rotationDegrees) }
+                    ?.asImageBitmap()
+            }
     }
     val bitmap = image
     val currentCorners by rememberUpdatedState(corners)

@@ -37,7 +37,17 @@ class DocumentRepository(
         sequence: Int,
         imagePath: String,
         filter: PageFilter,
-    ): Long = pageDao.insert(Page(documentId = documentId, sequence = sequence, imagePath = imagePath, filter = filter))
+        rotationDegrees: Int = 0,
+    ): Long =
+        pageDao.insert(
+            Page(
+                documentId = documentId,
+                sequence = sequence,
+                imagePath = imagePath,
+                filter = filter,
+                rotationDegrees = rotationDegrees,
+            ),
+        )
 
     /** Called once the PDF is actually built — see specs/ui-flows.md#3-page-review. */
     suspend fun finalizeDocument(

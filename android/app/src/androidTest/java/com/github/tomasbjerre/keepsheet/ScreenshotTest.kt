@@ -67,6 +67,16 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Done").performClick()
         awaitEnabled("Save")
         screenshot("6-page-review")
+        // Not a numbered Play listing slot (see AGENTS.md/release pipeline convention) — just
+        // documents the rotate control (specs/capture-and-processing.md#page-rotation,
+        // keepsheet#52) taking visible effect in the crop preview above it.
+        composeRule.onNodeWithText("Rotate right").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        screenshot("page-review-rotated")
+        // Back to upright — the rest of this flow (Document Detail, Merge) should keep
+        // showing the page the way it always has, not rotated from here on.
+        composeRule.onNodeWithText("Rotate left").performScrollTo().performClick()
+        composeRule.waitForIdle()
         composeRule.onNodeWithText("Crop manually").performScrollTo().performClick()
         composeRule.waitForIdle()
         screenshot("7-page-review-crop")

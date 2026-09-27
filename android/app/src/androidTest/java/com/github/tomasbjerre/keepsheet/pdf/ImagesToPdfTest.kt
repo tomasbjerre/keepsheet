@@ -1,10 +1,12 @@
 package com.github.tomasbjerre.keepsheet.pdf
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.github.tomasbjerre.keepsheet.SamplePages
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -45,6 +47,43 @@ class ImagesToPdfTest {
 
         assertTrue(destination.exists())
         assertTrue(destination.length() > 0)
+    }
+
+    @Test
+    fun copyImageForPage_rotates90DegreesAndSwapsWidthAndHeight() {
+        // See specs/capture-and-processing.md#page-rotation (keepsheet#52). A real,
+        // non-square photo — a square source can't tell a genuine 90° rotation apart from a
+        // no-op, since width and height would be equal either way.
+        val source = SamplePages.copyToCache(context, SamplePages.COVER)
+        val unrotated = File(workDir, "unrotated.jpg")
+        val rotated = File(workDir, "rotated.jpg")
+
+        copyImageForPage(context.contentResolver, Uri.fromFile(source), unrotated, rotationDegrees = 0)
+        copyImageForPage(context.contentResolver, Uri.fromFile(source), rotated, rotationDegrees = 90)
+
+        val unrotatedBitmap = BitmapFactory.decodeFile(unrotated.absolutePath)
+        val rotatedBitmap = BitmapFactory.decodeFile(rotated.absolutePath)
+        assertEquals(unrotatedBitmap.width, rotatedBitmap.height)
+        assertEquals(unrotatedBitmap.height, rotatedBitmap.width)
+        unrotatedBitmap.recycle()
+        rotatedBitmap.recycle()
+    }
+
+    @Test
+    fun copyImageForPage_rotating360DegreesIsANoOpOnDimensions() {
+        val source = SamplePages.copyToCache(context, SamplePages.COVER)
+        val original = File(workDir, "original.jpg")
+        val fullTurn = File(workDir, "full-turn.jpg")
+
+        copyImageForPage(context.contentResolver, Uri.fromFile(source), original, rotationDegrees = 0)
+        copyImageForPage(context.contentResolver, Uri.fromFile(source), fullTurn, rotationDegrees = 360)
+
+        val originalBitmap = BitmapFactory.decodeFile(original.absolutePath)
+        val fullTurnBitmap = BitmapFactory.decodeFile(fullTurn.absolutePath)
+        assertEquals(originalBitmap.width, fullTurnBitmap.width)
+        assertEquals(originalBitmap.height, fullTurnBitmap.height)
+        originalBitmap.recycle()
+        fullTurnBitmap.recycle()
     }
 
     @Test

@@ -43,9 +43,14 @@ every page is captured.
 
 Reached from Capture, or directly from Home's **Import**. Fine-tune each
 page before saving: drag the corners of the detected crop (or use **Crop manually** / **Full photo**), choose a filter (color, grayscale, or
-black-and-white), reorder, retake, or remove pages. Tap **Save** to build
-the PDF — KeepSheet suggests a file name automatically, and starts
-recognizing text in the background so the document becomes searchable.
+black-and-white), rotate the page 90° at a time with **Rotate left** /
+**Rotate right** (shown immediately in the crop preview above, and applied
+the same way everywhere the page is later shown), reorder, retake, or
+remove pages. Rotating a page whose crop was already set clears it back to
+the full photo, since the old crop no longer matches the new orientation.
+Tap **Save** to build the PDF — KeepSheet suggests a file name
+automatically, and starts recognizing text in the background so the
+document becomes searchable.
 
 ## Merge
 

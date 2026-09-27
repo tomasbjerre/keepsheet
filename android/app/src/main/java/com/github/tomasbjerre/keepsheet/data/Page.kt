@@ -30,5 +30,6 @@ data class Page(
     val sequence: Int,
     val imagePath: String,
     val filter: PageFilter,
+    val rotationDegrees: Int = 0,
     val searchText: String? = null,
 )
