@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -60,6 +63,8 @@ import com.github.tomasbjerre.keepsheet.data.DocumentBuilder
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import com.github.tomasbjerre.keepsheet.data.DocumentSource
 import com.github.tomasbjerre.keepsheet.data.PageFilter
+import com.github.tomasbjerre.keepsheet.data.PaperFormat
+import com.github.tomasbjerre.keepsheet.data.PaperFormatPreference
 import com.github.tomasbjerre.keepsheet.pdf.Corners
 import com.github.tomasbjerre.keepsheet.pdf.applyFilter
 import com.github.tomasbjerre.keepsheet.pdf.applyRotation
@@ -97,6 +102,8 @@ fun PageReviewScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val paperFormatPreference = remember { PaperFormatPreference(context) }
+    var paperFormat by remember { mutableStateOf(paperFormatPreference.format) }
     var saving by remember { mutableStateOf(false) }
     // Reorderable copy of [pages] — permuted in lockstep with filters/corners/rotations
     // (all four stay index-aligned to the same page) whenever the thumbnail strip below
@@ -145,6 +152,7 @@ fun PageReviewScreen(
                                 repository,
                                 filesDir,
                                 context.contentResolver,
+                                paperFormat,
                             )
                         // Explicit, rather than relying on withContext(Dispatchers.IO) above
                         // to hand back to whatever dispatched this coroutine: onSaved()
@@ -167,6 +175,13 @@ fun PageReviewScreen(
                     .padding(16.dp),
         ) {
             Text("${pageOrder.size} page(s)")
+            PageSizePicker(
+                format = paperFormat,
+                onPick = {
+                    paperFormat = it
+                    paperFormatPreference.format = it
+                },
+            )
             PageThumbnails(
                 pages = pageOrder,
                 selected = selected,
@@ -224,6 +239,39 @@ private fun PageReviewTopBar(
         },
     )
 }
+
+/**
+ * See specs/capture-and-processing.md#printer-friendly-pages: the page size (A4 or
+ * Letter) every page of this document is built to fit, remembered (via
+ * [PaperFormatPreference]) across documents until changed again.
+ */
+@Composable
+private fun PageSizePicker(
+    format: PaperFormat,
+    onPick: (PaperFormat) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { expanded = true }) { Text("Page size: ${format.label()}") }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            PaperFormat.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label()) },
+                    onClick = {
+                        onPick(option)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+private fun PaperFormat.label() =
+    when (this) {
+        PaperFormat.A4 -> "A4"
+        PaperFormat.LETTER -> "Letter"
+    }
 
 private val REVIEW_THUMBNAIL_SIZE = 96.dp
 private val REVIEW_THUMBNAIL_SPACING = 8.dp
@@ -549,6 +597,7 @@ private fun SaveButton(
     }
 }
 
+@Suppress("LongParameterList")
 private suspend fun saveAsDocument(
     pages: List<Uri>,
     filters: List<PageFilter>,
@@ -558,6 +607,7 @@ private suspend fun saveAsDocument(
     repository: DocumentRepository,
     filesDir: File,
     contentResolver: ContentResolver,
+    paperFormat: PaperFormat,
 ): Long {
     val builder =
         DocumentBuilder(
@@ -567,7 +617,7 @@ private suspend fun saveAsDocument(
             importPage = { index, filter, rotationDegrees, destination ->
                 copyImageForPage(contentResolver, pages[index], destination, filter, rotationDegrees, corners[index])
             },
-            buildPdf = { imagePaths, destination -> buildPdfFromImages(imagePaths, destination) },
+            buildPdf = { imagePaths, destination -> buildPdfFromImages(imagePaths, destination, paperFormat) },
         )
     return withContext(Dispatchers.IO) {
         builder.build(

@@ -3,10 +3,13 @@ package com.github.tomasbjerre.keepsheet.pdf
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.github.tomasbjerre.keepsheet.SamplePages
+import com.github.tomasbjerre.keepsheet.data.PaperFormat
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -100,15 +103,63 @@ class ImagesToPdfTest {
         assertEquals("%PDF-", pdfFile.readBytes().copyOfRange(0, 5).decodeToString())
     }
 
+    /** See specs/capture-and-processing.md#printer-friendly-pages (keepsheet#72): a page's
+     * PDF size is the paper format's own fixed size, never the source image's own (here
+     * deliberately huge) pixel dimensions. */
+    @Test
+    fun buildPdfFromImages_pageSizeIsTheFixedPaperFormatNotTheImagesOwnPixelDimensions() {
+        val page = writeTestJpeg(File(workDir, "huge.jpg"), Color.RED, width = 3000, height = 4000)
+        val pdfFile = File(workDir, "document.pdf")
+
+        buildPdfFromImages(listOf(page.absolutePath), pdfFile, PaperFormat.A4)
+
+        val (width, height) = firstPageSize(pdfFile)
+        assertEquals(595, width)
+        assertEquals(842, height)
+    }
+
+    @Test
+    fun buildPdfFromImages_letterFormatUsesTheStandardLetterPageSize() {
+        val page = writeTestJpeg(File(workDir, "page.jpg"), Color.RED)
+        val pdfFile = File(workDir, "document.pdf")
+
+        buildPdfFromImages(listOf(page.absolutePath), pdfFile, PaperFormat.LETTER)
+
+        val (width, height) = firstPageSize(pdfFile)
+        assertEquals(612, width)
+        assertEquals(792, height)
+    }
+
+    @Test
+    fun buildPdfFromImages_landscapeContentGetsALandscapePageNotAForcedPortraitOne() {
+        val page = writeTestJpeg(File(workDir, "wide.jpg"), Color.RED, width = 400, height = 200)
+        val pdfFile = File(workDir, "document.pdf")
+
+        buildPdfFromImages(listOf(page.absolutePath), pdfFile, PaperFormat.A4)
+
+        val (width, height) = firstPageSize(pdfFile)
+        assertTrue("expected a landscape page (width > height), was ${width}x$height", width > height)
+    }
+
     private fun writeTestJpeg(
         destination: File,
         color: Int,
+        width: Int = TEST_IMAGE_SIZE,
+        height: Int = TEST_IMAGE_SIZE,
     ): File {
-        val bitmap = Bitmap.createBitmap(TEST_IMAGE_SIZE, TEST_IMAGE_SIZE, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         bitmap.eraseColor(color)
         FileOutputStream(destination).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
         bitmap.recycle()
         return destination
+    }
+
+    private fun firstPageSize(pdfFile: File): Pair<Int, Int> {
+        ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
+            PdfRenderer(descriptor).use { renderer ->
+                renderer.openPage(0).use { page -> return page.width to page.height }
+            }
+        }
     }
 
     private companion object {
