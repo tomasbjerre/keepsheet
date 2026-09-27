@@ -1,7 +1,9 @@
 package com.github.tomasbjerre.keepsheet.ui
 
 import android.content.ContentResolver
+import android.graphics.Bitmap
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,12 +38,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.github.tomasbjerre.keepsheet.data.DocumentBuilder
@@ -49,8 +55,11 @@ import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import com.github.tomasbjerre.keepsheet.data.DocumentSource
 import com.github.tomasbjerre.keepsheet.data.PageFilter
 import com.github.tomasbjerre.keepsheet.pdf.Corners
+import com.github.tomasbjerre.keepsheet.pdf.applyFilter
+import com.github.tomasbjerre.keepsheet.pdf.applyRotation
 import com.github.tomasbjerre.keepsheet.pdf.buildPdfFromImages
 import com.github.tomasbjerre.keepsheet.pdf.copyImageForPage
+import com.github.tomasbjerre.keepsheet.pdf.decodeScaled
 import com.github.tomasbjerre.keepsheet.pdf.defaultFilter
 import com.github.tomasbjerre.keepsheet.pdf.detectCornersInImage
 import com.github.tomasbjerre.keepsheet.pdf.rotatedClockwise
@@ -158,6 +167,8 @@ fun PageReviewScreen(
                     },
                 )
                 FilterPicker(
+                    uri = pages[selected],
+                    rotationDegrees = rotations[selected],
                     current = filters[selected],
                     onPick = { picked -> filters = filters.toMutableList().also { it[selected] = picked } },
                     onApplyToAll = { filters = List(pages.size) { filters[selected] } },
@@ -284,22 +295,83 @@ private fun RotateControls(
     }
 }
 
+const val FILTER_PREVIEW_TEST_TAG = "filterPreview"
+private const val FILTER_PREVIEW_MAX_SIDE = 96
+
+/**
+ * See specs/capture-and-processing.md#document-filters: grayscale and black-and-white read
+ * as similar words, but produce very different results on a page with any shading or photo
+ * content — grayscale keeps it, black-and-white doesn't. Rather than make a user infer that
+ * from the label, each chip previews what its filter actually does to THIS page (keepsheet#49)
+ * — a generic icon can't show that, since the difference depends on what's on the page.
+ */
 @Composable
 private fun FilterPicker(
+    uri: Uri,
+    rotationDegrees: Int,
     current: PageFilter,
     onPick: (PageFilter) -> Unit,
     onApplyToAll: () -> Unit,
 ) {
+    val previews = filterPreviews(uri, rotationDegrees)
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PageFilter.entries.forEach { filter ->
-            FilterChip(selected = filter == current, onClick = { onPick(filter) }, label = { Text(filter.label()) })
+            FilterChip(
+                selected = filter == current,
+                onClick = { onPick(filter) },
+                label = { Text(filter.label()) },
+                leadingIcon =
+                    previews?.get(filter)?.let { preview ->
+                        {
+                            Image(
+                                bitmap = preview,
+                                contentDescription = "${filter.label()} preview",
+                                modifier = Modifier.size(24.dp).testTag(FILTER_PREVIEW_TEST_TAG),
+                            )
+                        }
+                    },
+            )
         }
     }
     TextButton(onClick = onApplyToAll) { Text("Apply to all pages") }
+}
+
+/**
+ * A small (see [FILTER_PREVIEW_MAX_SIDE]) copy of [uri], rotated like the live preview above
+ * (keepsheet#52) so what a chip shows matches what will actually be saved, filtered three
+ * ways with the same pure [applyFilter] the real export uses — not a stand-in approximation.
+ */
+@Composable
+private fun filterPreviews(
+    uri: Uri,
+    rotationDegrees: Int,
+): Map<PageFilter, ImageBitmap>? {
+    val resolver = LocalContext.current.contentResolver
+    val previews by
+        produceState<Map<PageFilter, ImageBitmap>?>(null, uri, rotationDegrees) {
+            value =
+                withContext(Dispatchers.Default) {
+                    val source =
+                        decodeScaled(resolver, uri, FILTER_PREVIEW_MAX_SIDE)
+                            ?.let { applyRotation(it, rotationDegrees) }
+                            ?: return@withContext null
+                    val width = source.width
+                    val height = source.height
+                    val basePixels = IntArray(width * height)
+                    source.getPixels(basePixels, 0, width, 0, 0, width, height)
+                    source.recycle()
+                    PageFilter.entries.associateWith { filter ->
+                        val pixels = basePixels.copyOf()
+                        applyFilter(pixels, width, height, filter)
+                        Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888).asImageBitmap()
+                    }
+                }
+        }
+    return previews
 }
 
 private fun PageFilter.label() =

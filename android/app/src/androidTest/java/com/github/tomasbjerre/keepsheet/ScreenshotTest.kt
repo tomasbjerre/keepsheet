@@ -15,7 +15,9 @@ import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.github.tomasbjerre.keepsheet.data.DocumentSource
+import com.github.tomasbjerre.keepsheet.data.PageFilter
 import com.github.tomasbjerre.keepsheet.pdf.buildPdfFromImages
+import com.github.tomasbjerre.keepsheet.ui.FILTER_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.MERGE_PICKER_ROW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
@@ -67,6 +69,22 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Done").performClick()
         awaitEnabled("Save")
         screenshot("6-page-review")
+        // Not a numbered Play listing slot (see AGENTS.md/release pipeline convention) — just
+        // documents each filter chip's live preview thumbnail (specs/capture-and-
+        // processing.md#document-filters, keepsheet#49) making grayscale vs. black-and-white
+        // visually obvious rather than a guess from the label alone.
+        composeRule.onNodeWithText("Grayscale").performScrollTo()
+        // useUnmergedTree: each preview Image is merged into its parent FilterChip's own
+        // semantics node (a chip is one actionable unit), so the default merged-tree query
+        // onAllNodesWithTag() other awaitTagCount() calls in this file use would never see
+        // these three separately.
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule
+                .onAllNodesWithTag(FILTER_PREVIEW_TEST_TAG, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .size == PageFilter.entries.size
+        }
+        screenshot("page-review-filters")
         // Not a numbered Play listing slot (see AGENTS.md/release pipeline convention) — just
         // documents the rotate control (specs/capture-and-processing.md#page-rotation,
         // keepsheet#52) taking visible effect in the crop preview above it.
