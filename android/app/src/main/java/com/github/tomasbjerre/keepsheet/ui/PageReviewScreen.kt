@@ -262,6 +262,10 @@ private fun CropSection(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp),
         )
+        Text(
+            "Pinch to zoom in for a closer look, drag to pan.",
+            style = MaterialTheme.typography.bodySmall,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = onRedetect, enabled = !detecting) { Text("Detect edges") }
             TextButton(onClick = { onCornersChange(Corners.inset()) }, enabled = !detecting && corners == null) {
