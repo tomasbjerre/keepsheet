@@ -2,6 +2,7 @@ package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -68,8 +69,8 @@ class ScreenshotTest {
         composeRule.waitForIdle()
         screenshot("2-capture")
 
-        awaitEnabled("Shutter")
-        composeRule.onNodeWithText("Shutter").performClick()
+        awaitShutterEnabled()
+        composeRule.onNodeWithContentDescription("Shutter").performClick()
         awaitTagCount(THUMBNAIL_TEST_TAG, 1)
         composeRule.onNodeWithText("Done").performClick()
         awaitEnabled("Save")
@@ -163,6 +164,13 @@ class ScreenshotTest {
     private fun awaitEnabled(text: String) {
         composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
             composeRule.onAllNodes(hasText(text) and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    /** The shutter (keepsheet#47) is an icon with no text — [awaitEnabled] can't find it. */
+    private fun awaitShutterEnabled() {
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule.onAllNodes(hasContentDescription("Shutter") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
     }
 
