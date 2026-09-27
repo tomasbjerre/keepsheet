@@ -7,10 +7,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -284,7 +287,15 @@ private fun SaveButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                // The app runs edge-to-edge (see enableEdgeToEdge() in MainActivity), and
+                // Scaffold's bottomBar slot isn't padded for system bars on its own the way
+                // its content slot is via innerPadding — without this, the gesture/nav bar
+                // overlaps (or on some devices fully covers) this button (#48).
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         if (saving) {
             CircularProgressIndicator(modifier = Modifier.size(20.dp))
