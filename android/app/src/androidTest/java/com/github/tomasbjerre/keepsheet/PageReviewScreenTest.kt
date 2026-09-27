@@ -80,7 +80,11 @@ class PageReviewScreenTest {
         importTwoSamplePages()
 
         composeRule.onNodeWithText("View full size").performScrollTo().performClick()
-        composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertExists()
+        // Filtering the (larger, full-screen-sized) image takes longer than the crop
+        // preview's own smaller one — wait for it rather than a fixed assertExists().
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule.onAllNodesWithTag(PHOTO_VIEWER_TEST_TAG).fetchSemanticsNodes().isNotEmpty()
+        }
 
         composeRule.onNodeWithContentDescription("Close").performClick()
         composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertDoesNotExist()
