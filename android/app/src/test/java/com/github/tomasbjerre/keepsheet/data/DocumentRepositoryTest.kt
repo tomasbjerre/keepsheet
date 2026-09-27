@@ -213,4 +213,29 @@ class DocumentRepositoryTest {
 
             assertThat(repository.observeDocuments().first()).isEmpty()
         }
+
+    @Test
+    fun `applySuggestedName re-checks nameEditedByUser at write time, not from a stale read`() =
+        runTest {
+            // Regression: applySuggestedName (background OCR — specs/capture-and-
+            // processing.md#text-recognition-ocr) used to read the document, check
+            // nameEditedByUser, then write `document.copy(name = name)` — a manual
+            // rename (DocumentRenamerTest's "an automatic rename never overwrites a
+            // name the user chose" only covers the *sequential* case) landing in that
+            // window would get silently clobbered: the write went through anyway,
+            // using a copy of the pre-rename row, since it only checked the flag it
+            // read earlier, not the row's actual current state. Simulating that
+            // window directly (read, then a rename, then finish the write this call
+            // started with) rather than depending on real thread timing, which would
+            // make this test flaky.
+            val documentId = repository.createDocument(1_000, "fallback", "/tmp/a.pdf", DocumentSource.SCANNED)
+            val staleRead = database.documentDao().getById(documentId)!!
+            check(!staleRead.nameEditedByUser)
+
+            repository.renameDocument(documentId, "My own name")
+
+            val rowsChanged = database.documentDao().updateNameIfNotUserEdited(documentId, "OCR guess")
+            assertThat(rowsChanged).isZero()
+            assertThat(repository.observeDocument(documentId).first()!!.name).isEqualTo("My own name")
+        }
 }
