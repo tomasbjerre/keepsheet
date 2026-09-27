@@ -33,11 +33,13 @@ with its name, date, page count, and size. Tap a row to open it.
 <img src="screenshots/2-capture.jpg" alt="Capture screen" width="200">
 
 Opened by **Scan**. A live camera view — tap the shutter to capture a
-page. Captured pages appear in a thumbnail strip below, where you can drag
-to reorder them, retake one, or remove it. Capture is camera-only; to add
-existing photos instead, use Home's **Import**. If camera access isn't
-granted, this screen explains why and points you back to Home's **Import**
-to add pages without a camera. Tap **Done** once every page is captured.
+page. Captured pages appear in a thumbnail strip below, where you can
+remove one. That's it — no reorder or retake here; reorder happens once
+you reach Page Review, and to replace a bad shot, just remove it and
+capture a new one. Capture is camera-only; to add existing photos
+instead, use Home's **Import**. If camera access isn't granted, this
+screen explains why and points you back to Home's **Import** to add
+pages without a camera. Tap **Done** once every page is captured.
 
 ## Page Review
 
@@ -47,7 +49,7 @@ black-and-white — each option previews its actual effect on the page, so
 the difference between grayscale and black-and-white is obvious before you
 pick), rotate the page 90° at a time with **Rotate left** /
 **Rotate right** (shown immediately in the crop preview above, and applied
-the same way everywhere the page is later shown), reorder, retake, or
+the same way everywhere the page is later shown), reorder or
 remove pages. Rotating a page whose crop was already set clears it back to
 the full photo, since the old crop no longer matches the new orientation.
 Pinch the crop preview to zoom in for a closer look — at whether a filter

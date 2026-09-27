@@ -46,16 +46,16 @@ class CaptureScreenTest {
         composeRule.onNodeWithText("Done").assertIsEnabled()
     }
 
+    /** Capture is deliberately minimal — no retake, so a second shutter tap always adds a
+     * new page rather than replacing the last one (see
+     * specs/capture-and-processing.md#multi-page-capture). */
     @Test
-    fun retakeReplacesThePageInsteadOfAddingANewOne() {
+    fun capturingASecondPageAddsRatherThanReplaces() {
         composeRule.onNodeWithText("Scan").performClick()
         capturePage()
 
-        composeRule.onNodeWithContentDescription("Retake page").performClick()
-        composeRule.onNodeWithText("Retaking — tap the shutter for a new shot").assertExists()
-
         composeRule.onNodeWithContentDescription("Shutter").performClick()
-        awaitThumbnailCount(1)
+        awaitThumbnailCount(2)
     }
 
     @Test

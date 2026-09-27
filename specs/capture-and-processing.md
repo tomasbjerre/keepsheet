@@ -15,9 +15,10 @@ photo:
   [UI Flows](ui-flows.md#2-capture)). Importing existing photos instead of
   using the camera is Home's separate Import flow, which produces its own
   document and can't be mixed with a camera session's pages.
-- Any captured page can be **reordered** (drag within the
-  thumbnail strip) or **retaken** (replace it with a new camera shot)
-  before the document is finalized.
+- Capture is deliberately minimal: a page can only be captured or removed
+  here. No reordering or retaking mid-session — reordering is Page
+  Review's job (see [UI Flows](ui-flows.md#3-page-review)); to fix a bad
+  shot, remove it and capture a fresh one.
 - Any page can be removed from the list before finalizing. Removing the
   last remaining page leaves an empty capture session, not a document with
   zero pages.

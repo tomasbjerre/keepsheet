@@ -10,7 +10,7 @@ body:
 
         - **Home** — the document list and the Scan/Import/Merge actions.
         - **Capture** — the live camera view used while scanning pages.
-        - **Page Review** — reordering, retaking, and filtering captured pages before saving.
+        - **Page Review** — reordering and filtering captured pages before saving.
         - **Merge** — picking and ordering existing PDFs to combine.
         - **Document Detail** — the view, share, rename, and delete screen for one document.
 
@@ -26,7 +26,7 @@ body:
       options:
         - Home (document list / Scan / Import / Merge)
         - Capture (live camera scanning)
-        - Page Review (reorder / retake / filter)
+        - Page Review (reorder / filter)
         - Merge (picking and ordering PDFs)
         - Document Detail (a saved document)
         - Not tied to a specific screen
@@ -38,7 +38,7 @@ body:
       description: >
         What did you do, what did you expect, and what happened instead?
         If relevant, mention which control you used — e.g. **Scan**,
-        **Import**, **Merge**, **Retake**, **Save**, **Share**,
+        **Import**, **Merge**, **Save**, **Share**,
         **Delete**, or **Back**.
       placeholder: |
         1. On the Page Review screen, I tapped the filter picker...

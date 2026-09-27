@@ -36,7 +36,7 @@ happened to exist when this was written.
 ## Touch targets
 
 - Capture's shutter action, and every per-page action in the thumbnail
-  strip/review list (reorder handle, retake, remove), must meet a minimum
+  strip/review list (reorder handle, remove), must meet a minimum
   touch target size (44×44dp or larger) even when the thumbnail itself is
   smaller — a small preview image is not an excuse for a small tap target
   layered on top of it.

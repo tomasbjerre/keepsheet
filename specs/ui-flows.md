@@ -42,8 +42,9 @@ Entered by tapping Scan on Home.
   [automatic cropping and straightening](capture-and-processing.md#automatic-cropping-and-straightening),
   and adds it to a thumbnail strip of the pages captured so far in this
   session.
-- The thumbnail strip supports reordering (drag) and retaking (replace one
-  page with a new shot) — see
+- Deliberately minimal: the thumbnail strip only supports removing a page,
+  nothing else — no reordering or retaking here (reorder is Page Review's
+  job) — see
   [Multi-page capture](capture-and-processing.md#multi-page-capture).
 - Camera-only: Capture has no Import action of its own. Importing existing
   photos is Home's Import (see [Home](#1-home)), a separate flow into
@@ -67,9 +68,10 @@ Reached from Capture's Done action, or directly from Home's Import.
 
 - Every captured/imported page, in order, each showing: its processed
   thumbnail, its current [filter](capture-and-processing.md#document-filters),
-  and per-page **retake**, **remove**, and **reorder** (drag) actions —
-  the same capabilities Capture's thumbnail strip offers, plus the ability
-  to fine-tune a page's detected crop by hand.
+  and per-page **remove** and **reorder** (drag) actions, plus the ability
+  to fine-tune a page's detected crop by hand. No retake here (or
+  anywhere) — to replace a bad page, remove it and capture/import a
+  fresh one instead.
 - A filter picker, applying to the currently selected page (with a
   "apply to all pages" shortcut, since most documents use one filter
   throughout) — each option previews its actual effect on the page being
