@@ -27,6 +27,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # Used below to re-encode the instruction video for player compatibility — not on
+      # this runner's PATH inside the emulator-runner action's script: block (same as
+      # wisp's own instrumented_android.yml found), even though it's normally
+      # preinstalled on ubuntu-latest, so install it explicitly rather than assume it's
+      # reachable.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Enable KVM for the emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -83,6 +91,38 @@ jobs:
             ./gradlew connectedDebugAndroidTest || ./gradlew connectedDebugAndroidTest
             adb pull /sdcard/keepsheet-screenshots screenshots-raw || mkdir -p screenshots-raw
 
+            # Instruction video (keepsheet#54), attached to every GitHub Release by the
+            # shared bundle-android-release.yaml once uploaded as an "instruction-video"
+            # artifact below — a second, separate connectedDebugAndroidTest run scoped to
+            # just InstructionVideoTest (not the whole suite already run above), so the
+            # recording shows a clean, deliberate walkthrough rather than incidental UI
+            # activity from every other instrumented test running in whatever order
+            # alongside it. Same screenrecord/ffmpeg approach as wisp's own
+            # instrumented_android.yml.
+            #
+            # Assemble first, unrecorded — screenrecord is capped at 180s, and the build
+            # (already up to date here, but still non-instant) would otherwise eat into
+            # the walkthrough's own recording time before any app UI ever appears.
+            ./gradlew assembleDebug assembleDebugAndroidTest
+            adb shell screenrecord --time-limit 180 /sdcard/keepsheet-instruction-video.mp4 &
+            RECORD_PID=$!
+            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.github.tomasbjerre.keepsheet.InstructionVideoTest || ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.github.tomasbjerre.keepsheet.InstructionVideoTest
+            # Stopped with SIGINT (not left to hit --time-limit) so screenrecord finalizes
+            # the mp4 container's trailing moov atom instead of producing a file every
+            # player rejects as corrupt. Sent to the *remote* screenrecord process via its
+            # own adb shell call — killing the local `adb shell &` client above (e.g.
+            # `kill -INT "$RECORD_PID"`) just drops the connection without ever reaching
+            # screenrecord's signal handler.
+            adb shell pkill -INT screenrecord 2>/dev/null || true
+            wait "$RECORD_PID" 2>/dev/null || true
+            sleep 2
+            adb pull /sdcard/keepsheet-instruction-video.mp4 instruction-video-raw.mp4 || true
+            # screenrecord's raw output has known non-monotonic timestamps that ffmpeg and
+            # most players tolerate but VLC's decoder rejects outright ("Codec not
+            # supported"). Re-encoding (not just remuxing) normalizes that and the pixel
+            # format/profile into something every common player handles.
+            if [ -s instruction-video-raw.mp4 ]; then ffmpeg -y -fflags +genpts -i instruction-video-raw.mp4 -c:v libx264 -pix_fmt yuv420p -movflags +faststart instruction-video.mp4 || cp instruction-video-raw.mp4 instruction-video.mp4; fi
+
       - name: Upload instrumented test report
         if: always()
         uses: actions/upload-artifact@v7
@@ -97,5 +137,17 @@ jobs:
         with:
           name: screenshots
           path: android/screenshots-raw
+          retention-days: 1
+          if-no-files-found: warn
+
+      # Downloaded and attached to the GitHub Release by the shared
+      # bundle-android-release.yaml / android-release.yaml (tomasbjerre/.github) —
+      # no changes needed there, it already supports an optional "instruction-video"
+      # artifact (keepsheet#54).
+      - name: Upload instruction video
+        uses: actions/upload-artifact@v7
+        with:
+          name: instruction-video
+          path: android/instruction-video.mp4
           retention-days: 1
           if-no-files-found: warn
