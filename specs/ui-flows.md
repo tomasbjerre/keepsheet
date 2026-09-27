@@ -70,7 +70,8 @@ Reached from Capture's Done action, or directly from Home's Import.
   to fine-tune a page's detected crop by hand.
 - A filter picker, applying to the currently selected page (with a
   "apply to all pages" shortcut, since most documents use one filter
-  throughout).
+  throughout) — each option previews its actual effect on the page being
+  reviewed (see [Capture & Processing](capture-and-processing.md#document-filters)).
 - A rotate control for the currently selected page (see
   [Capture & Processing](capture-and-processing.md#page-rotation)),
   visible immediately in that page's crop preview.

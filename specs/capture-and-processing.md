@@ -91,6 +91,13 @@ current capture session (or black-and-white for the first page of a new
 one — the most common case, a text document), and can be changed at any
 time before finalizing (see [UI Flows](ui-flows.md#3-page-review)).
 
+Grayscale and black-and-white read as similar options, but can produce very
+different results depending on what's on the page — grayscale keeps
+shading/photos legible, black-and-white can wash them out. Each option is
+presented with a live preview of what it would actually do to the page
+being reviewed, not just its name, so the difference is obvious before
+picking one rather than something to infer from the label.
+
 ## Text recognition (OCR)
 
 After a document is finalized, KeepSheet recognizes text on each page so
