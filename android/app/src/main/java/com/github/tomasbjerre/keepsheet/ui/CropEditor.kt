@@ -2,23 +2,31 @@ package com.github.tomasbjerre.keepsheet.ui
 
 import android.net.Uri
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.tomasbjerre.keepsheet.pdf.Corners
@@ -44,6 +52,17 @@ private const val GRAB_RADIUS_DP = 40
  * [rotationDegrees] (specs/capture-and-processing.md#page-rotation) is applied to the
  * preview itself, not just remembered — the whole point of showing it live here is that
  * what will be applied to the saved page is never a guess (keepsheet#52).
+ *
+ * Pinch-to-zoom and drag-to-pan (keepsheet#53) let a person inspect fine detail — e.g. whether
+ * a filter choice keeps a photo on the page legible — without that detail being too small to
+ * judge at the preview's normal size. Zoom is anchored on the viewport's center rather than the
+ * pinch gesture's own centroid: simpler and just as usable for "zoom in to look closely," and
+ * avoids the extra bookkeeping precise finger-anchored zoom would need. A single-finger drag
+ * still adjusts a crop corner when one is grabbed (unchanged from before); it only pans the
+ * zoomed image when no corner is grabbed, so zoom never steals the existing crop gesture.
+ * Zoom/pan reset whenever [uri] or [rotationDegrees] changes (a different page, or a rotation
+ * that changes what's being looked at) — a leftover zoomed-in viewport on a freshly shown image
+ * would be confusing, not helpful.
  */
 @Composable
 fun CropEditor(
@@ -67,18 +86,41 @@ fun CropEditor(
     val currentOnChange by rememberUpdatedState(onCornersChange)
     val color = MaterialTheme.colorScheme.primary
 
+    var scale by remember(uri, rotationDegrees) { mutableStateOf(MIN_ZOOM_SCALE) }
+    var panOffset by remember(uri, rotationDegrees) { mutableStateOf(Offset.Zero) }
+    val currentScale by rememberUpdatedState(scale)
+    val currentPan by rememberUpdatedState(panOffset)
+
     Canvas(
         modifier =
             modifier
                 .fillMaxWidth()
                 .aspectRatio(bitmap?.let { it.width.toFloat() / it.height } ?: 1f)
                 .testTag(CROP_EDITOR_TEST_TAG)
-                .pointerInput(uri) { dragCorners({ currentCorners }, { currentOnChange(it) }) },
+                .pointerInput(uri) {
+                    handleGestures(
+                        corners = { currentCorners },
+                        onCornersChange = { currentOnChange(it) },
+                        scale = { currentScale },
+                        onScaleChange = { scale = it },
+                        panOffset = { currentPan },
+                        onPanChange = { panOffset = it },
+                    )
+                },
     ) {
         if (bitmap != null) {
-            drawImage(bitmap, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+            val imageSize =
+                IntSize(
+                    (size.width * scale).toInt().coerceAtLeast(1),
+                    (size.height * scale).toInt().coerceAtLeast(1),
+                )
+            val imageOffset = IntOffset(panOffset.x.toInt(), panOffset.y.toInt())
+            drawImage(bitmap, dstOffset = imageOffset, dstSize = imageSize)
         }
-        val quad = corners?.toList()?.map { Offset(it.x * size.width, it.y * size.height) }
+        val quad =
+            corners?.toList()?.map {
+                Offset(it.x * size.width * scale + panOffset.x, it.y * size.height * scale + panOffset.y)
+            }
         if (quad != null) {
             val outline =
                 Path().apply {
@@ -91,28 +133,76 @@ fun CropEditor(
     }
 }
 
-private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.dragCorners(
+/**
+ * One pointer: drags the nearest crop corner if one is within grab range, otherwise pans the
+ * image if it's zoomed in. Two or more pointers: pinch-to-zoom (anchored on the viewport
+ * center) plus whatever pan the pinch itself carries. See [CropEditor]'s doc for why zoom is
+ * center-anchored rather than centroid-anchored.
+ */
+private suspend fun PointerInputScope.handleGestures(
     corners: () -> Corners?,
-    onChange: (Corners) -> Unit,
+    onCornersChange: (Corners) -> Unit,
+    scale: () -> Float,
+    onScaleChange: (Float) -> Unit,
+    panOffset: () -> Offset,
+    onPanChange: (Offset) -> Unit,
 ) {
-    var grabbed = -1
-    detectDragGestures(
-        onDragStart = { start ->
-            grabbed = nearestCorner(corners(), start, size, GRAB_RADIUS_DP.dp.toPx())
-        },
-        onDragEnd = { grabbed = -1 },
-        onDragCancel = { grabbed = -1 },
-    ) { change, drag ->
-        val current = corners()
-        if (current != null && grabbed >= 0) {
-            change.consume()
-            val old = current.toList()[grabbed]
-            val moved =
-                Point(
-                    (old.x + drag.x / size.width).coerceIn(0f, 1f),
-                    (old.y + drag.y / size.height).coerceIn(0f, 1f),
-                )
-            onChange(current.with(grabbed, moved))
+    fun applyPan(newOffset: Offset) {
+        onPanChange(
+            Offset(
+                clampPanOffset(newOffset.x, size.width.toFloat(), scale()),
+                clampPanOffset(newOffset.y, size.height.toFloat(), scale()),
+            ),
+        )
+    }
+
+    awaitEachGesture {
+        var grabbedCorner = -1
+        // True for the remainder of a gesture once it has seen 2+ pointers, so a pinch that
+        // drops back to one finger starts a fresh single-finger phase (re-picks the nearest
+        // corner from where that finger now is) rather than reusing whatever grab state a
+        // single-finger phase before the pinch might have left behind.
+        var everMultiTouch = false
+        while (true) {
+            val event = awaitPointerEvent()
+            val pressed = event.changes.filter { it.pressed }
+            if (pressed.isEmpty()) break
+            if (pressed.size >= 2) {
+                everMultiTouch = true
+                grabbedCorner = -1
+                event.changes.forEach { it.consume() }
+                val oldScale = scale()
+                val newScale = clampZoomScale(oldScale * event.calculateZoom())
+                val center = Offset(size.width / 2f, size.height / 2f)
+                val contentCenterBefore = (center - panOffset()) / oldScale
+                applyPan(center - contentCenterBefore * newScale + event.calculatePan())
+                onScaleChange(newScale)
+            } else {
+                val change = pressed.first()
+                if (everMultiTouch || change.previousPressed.not()) {
+                    everMultiTouch = false
+                    grabbedCorner =
+                        nearestCorner(corners(), change.position, size, scale(), panOffset(), GRAB_RADIUS_DP.dp.toPx())
+                }
+                val current = corners()
+                when {
+                    current != null && grabbedCorner >= 0 -> {
+                        change.consume()
+                        val old = current.toList()[grabbedCorner]
+                        val drag = change.positionChange()
+                        val moved =
+                            Point(
+                                (old.x + drag.x / (size.width * scale())).coerceIn(0f, 1f),
+                                (old.y + drag.y / (size.height * scale())).coerceIn(0f, 1f),
+                            )
+                        onCornersChange(current.with(grabbedCorner, moved))
+                    }
+                    scale() > MIN_ZOOM_SCALE -> {
+                        change.consume()
+                        applyPan(panOffset() + change.positionChange())
+                    }
+                }
+            }
         }
     }
 }
@@ -121,10 +211,18 @@ private fun nearestCorner(
     corners: Corners?,
     touch: Offset,
     size: IntSize,
+    scale: Float,
+    panOffset: Offset,
     maxDistance: Float,
 ): Int {
     val distances =
-        corners?.toList()?.map { hypot(it.x * size.width - touch.x, it.y * size.height - touch.y) }.orEmpty()
+        corners
+            ?.toList()
+            ?.map {
+                val x = it.x * size.width * scale + panOffset.x
+                val y = it.y * size.height * scale + panOffset.y
+                hypot(x - touch.x, y - touch.y)
+            }.orEmpty()
     val nearest = distances.indices.minByOrNull { distances[it] } ?: return -1
     return if (distances[nearest] <= maxDistance) nearest else -1
 }

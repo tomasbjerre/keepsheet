@@ -50,6 +50,10 @@ pick), rotate the page 90° at a time with **Rotate left** /
 the same way everywhere the page is later shown), reorder, retake, or
 remove pages. Rotating a page whose crop was already set clears it back to
 the full photo, since the old crop no longer matches the new orientation.
+Pinch the crop preview to zoom in for a closer look — at whether a filter
+choice keeps a photo on the page legible, for instance — and drag to pan
+around while zoomed; dragging a crop corner still works the same as before
+even while zoomed in.
 Tap **Save** to build the PDF — KeepSheet suggests a file name
 automatically, and starts recognizing text in the background so the
 document becomes searchable.

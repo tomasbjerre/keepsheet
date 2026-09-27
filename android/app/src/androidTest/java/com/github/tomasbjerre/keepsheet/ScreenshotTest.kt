@@ -1,14 +1,18 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.pinch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -17,6 +21,7 @@ import androidx.test.uiautomator.UiSelector
 import com.github.tomasbjerre.keepsheet.data.DocumentSource
 import com.github.tomasbjerre.keepsheet.data.PageFilter
 import com.github.tomasbjerre.keepsheet.pdf.buildPdfFromImages
+import com.github.tomasbjerre.keepsheet.ui.CROP_EDITOR_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.FILTER_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.MERGE_PICKER_ROW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
@@ -85,6 +90,21 @@ class ScreenshotTest {
                 .size == PageFilter.entries.size
         }
         screenshot("page-review-filters")
+        // Not a numbered Play listing slot — documents pinch-to-zoom on the crop preview
+        // (specs/ui-flows.md#3-page-review, keepsheet#53) actually taking effect, not just
+        // compiling. A real two-finger gesture, not a direct state poke, so this exercises the
+        // same gesture-recognition code path a person's fingers would.
+        composeRule.onNodeWithTag(CROP_EDITOR_TEST_TAG).performTouchInput {
+            val center = Offset(visibleSize.width / 2f, visibleSize.height / 2f)
+            pinch(
+                start0 = center - Offset(20f, 0f),
+                end0 = center - Offset(120f, 0f),
+                start1 = center + Offset(20f, 0f),
+                end1 = center + Offset(120f, 0f),
+            )
+        }
+        composeRule.waitForIdle()
+        screenshot("page-review-zoomed")
         // Not a numbered Play listing slot (see AGENTS.md/release pipeline convention) — just
         // documents the rotate control (specs/capture-and-processing.md#page-rotation,
         // keepsheet#52) taking visible effect in the crop preview above it.

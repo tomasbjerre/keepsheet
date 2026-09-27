@@ -75,6 +75,11 @@ Reached from Capture's Done action, or directly from Home's Import.
 - A rotate control for the currently selected page (see
   [Capture & Processing](capture-and-processing.md#page-rotation)),
   visible immediately in that page's crop preview.
+- The crop preview supports pinch-to-zoom and drag-to-pan, so fine detail
+  (e.g. whether a filter choice keeps a photo on the page legible) can be
+  inspected up close rather than only at the preview's normal size.
+  Zooming in doesn't interfere with dragging a crop corner: a single-finger
+  drag still moves a grabbed corner, and only pans the image otherwise.
 - A **Save** action finalizes the document: builds the PDF from the pages
   in their current order/filters, creates a
   [Document](data-model.md#document) with an automatically suggested name
