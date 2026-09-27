@@ -33,7 +33,7 @@ The app's entry point.
 
 ## 2. Capture
 
-Entered by tapping Scan on Home, or by choosing Import.
+Entered by tapping Scan on Home.
 
 - A live camera view with a real-time overlay hinting at the detected page
   edges, so the user can see before tapping the shutter whether the whole
@@ -45,9 +45,10 @@ Entered by tapping Scan on Home, or by choosing Import.
 - The thumbnail strip supports reordering (drag) and retaking (replace one
   page with a new shot) — see
   [Multi-page capture](capture-and-processing.md#multi-page-capture).
-- An **Import** action within this same screen adds existing photos to the
-  same running list, so camera shots and imported photos can be mixed in
-  one document.
+- Camera-only: Capture has no Import action of its own. Importing existing
+  photos is Home's Import (see [Home](#1-home)), a separate flow into
+  [Page Review](#3-page-review) that can't be mixed with a camera session
+  — keeps this screen to one job.
 - A **Done** action (enabled once at least one page has been captured)
   proceeds to [Page Review](#3-page-review).
 - The system/gesture back action, with at least one page captured, asks
@@ -55,9 +56,10 @@ Entered by tapping Scan on Home, or by choosing Import.
   to an accidental back tap is exactly the kind of thing worth one extra
   tap to prevent.
 - If camera permission is missing or denied, this screen must explain
-  what's needed and offer a way to grant it, and still let the user
-  proceed via Import alone (see
-  [Permissions & Privacy](permissions-and-privacy.md)).
+  what's needed, offer a way to grant it, and point the user back to
+  Home's Import as the way to add pages without a camera (see
+  [Permissions & Privacy](permissions-and-privacy.md)) — Capture itself
+  has no Import action to fall back on.
 
 ## 3. Page Review
 

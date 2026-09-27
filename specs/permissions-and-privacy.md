@@ -20,8 +20,9 @@
 - If camera permission is denied, [Capture](ui-flows.md#2-capture) must
   say so clearly, offer a direct way to grant it (deep link to app
   settings if the platform requires that after a permanent denial), and
-  still offer Import as a working alternative. It must never silently
-  show a blank/frozen camera view.
+  point the user back to Home's Import as a working alternative — Capture
+  itself has no Import action of its own. It must never silently show a
+  blank/frozen camera view.
 - If photo/media access is denied, Import and Merge's file picker must say
   so clearly and offer a way to grant it, rather than silently doing
   nothing when tapped.

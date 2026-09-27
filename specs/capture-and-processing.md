@@ -11,11 +11,11 @@ photo:
   shot, see it added to a running list of captured pages (shown as a
   thumbnail strip), and immediately take the next one — no per-page
   "save" or "next" round trip back to a list screen.
-- Import (choosing existing photos instead of the camera) adds to the same
-  running list the same way, and the two can be mixed in one document —
-  a photo of page 1 taken with the camera, page 2 imported from the photo
-  library.
-- Any captured/imported page can be **reordered** (drag within the
+- Capture is camera-only — it has no Import action of its own (see
+  [UI Flows](ui-flows.md#2-capture)). Importing existing photos instead of
+  using the camera is Home's separate Import flow, which produces its own
+  document and can't be mixed with a camera session's pages.
+- Any captured page can be **reordered** (drag within the
   thumbnail strip) or **retaken** (replace it with a new camera shot)
   before the document is finalized.
 - Any page can be removed from the list before finalizing. Removing the

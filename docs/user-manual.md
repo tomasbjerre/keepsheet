@@ -34,10 +34,10 @@ with its name, date, page count, and size. Tap a row to open it.
 
 Opened by **Scan**. A live camera view — tap the shutter to capture a
 page. Captured pages appear in a thumbnail strip below, where you can drag
-to reorder them, retake one, or remove it. Add more photos via **Import**
-without leaving this screen. If camera access isn't granted, this screen
-explains why and still lets you add pages with Import. Tap **Done** once
-every page is captured.
+to reorder them, retake one, or remove it. Capture is camera-only; to add
+existing photos instead, use Home's **Import**. If camera access isn't
+granted, this screen explains why and points you back to Home's **Import**
+to add pages without a camera. Tap **Done** once every page is captured.
 
 ## Page Review
 
