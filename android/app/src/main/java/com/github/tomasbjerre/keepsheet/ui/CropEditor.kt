@@ -192,11 +192,14 @@ private suspend fun PointerInputScope.handleGestures(
                         nearestCorner(corners(), change.position, size, scale(), panOffset(), GRAB_RADIUS_DP.dp.toPx())
                 }
                 val current = corners()
+                // positionChange() must be read before consume() — it returns Offset.Zero
+                // for a change already marked consumed, so consuming first here would
+                // always report a zero drag and silently do nothing (keepsheet#69).
+                val drag = change.positionChange()
                 when {
                     current != null && grabbedCorner >= 0 -> {
                         change.consume()
                         val old = current.toList()[grabbedCorner]
-                        val drag = change.positionChange()
                         val moved =
                             Point(
                                 (old.x + drag.x / (size.width * scale())).coerceIn(0f, 1f),
@@ -206,7 +209,7 @@ private suspend fun PointerInputScope.handleGestures(
                     }
                     scale() > MIN_ZOOM_SCALE -> {
                         change.consume()
-                        applyPan(panOffset() + change.positionChange())
+                        applyPan(panOffset() + drag)
                     }
                 }
             }

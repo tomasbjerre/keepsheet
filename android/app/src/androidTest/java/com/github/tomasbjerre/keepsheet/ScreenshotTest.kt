@@ -129,6 +129,16 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Crop manually").performScrollTo().performClick()
         composeRule.waitForIdle()
         screenshot("7-page-review-crop")
+        // Not a numbered Play listing slot — documents dragging a crop corner actually
+        // moving it (specs/capture-and-processing.md#automatic-cropping-and-straightening,
+        // keepsheet#69: a corner used to silently ignore every drag).
+        composeRule.onNodeWithTag(CROP_EDITOR_TEST_TAG).performTouchInput {
+            down(Offset(visibleSize.width * 0.1f, visibleSize.height * 0.1f))
+            moveBy(Offset(visibleSize.width * 0.3f, visibleSize.height * 0.3f))
+            up()
+        }
+        composeRule.waitForIdle()
+        screenshot("page-review-crop-dragged")
         composeRule.onNodeWithText("Full photo").performScrollTo().performClick()
         composeRule.onNodeWithText("Save").performClick()
         awaitTagCount(PAGE_PREVIEW_TEST_TAG, 1)

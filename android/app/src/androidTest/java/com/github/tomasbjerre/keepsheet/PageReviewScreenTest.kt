@@ -4,7 +4,9 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.ClipData
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
@@ -15,14 +17,20 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.github.tomasbjerre.keepsheet.ui.CROP_EDITOR_TEST_TAG
+import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PHOTO_VIEWER_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.REVIEW_THUMBNAIL_TEST_TAG
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.anyOf
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -88,6 +96,57 @@ class PageReviewScreenTest {
 
         composeRule.onNodeWithContentDescription("Close").performClick()
         composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertDoesNotExist()
+    }
+
+    /** Regression test for keepsheet#69: a real single-finger drag (down/move/up, no
+     * long-press involved — CropEditor's own pointerInput, not detectDragGesturesAfterLongPress)
+     * must actually move the grabbed corner. The underlying bug was reading
+     * change.positionChange() after change.consume() — it returns Offset.Zero once a change
+     * is consumed, so the drag silently did nothing every time despite correctly picking a
+     * corner to grab. Verified against the real saved output (not the drawn overlay, which
+     * has no semantics to assert on): dragging a corner inward must shrink the page below
+     * what the default 10%-inset crop alone would produce. */
+    @Test
+    fun draggingACropCornerActuallyMovesIt() {
+        importTwoSamplePages()
+
+        // Guarantee a known starting quad (10% inset) regardless of whether automatic
+        // detection already found something for this real photographed sample page.
+        if (composeRule.onAllNodes(hasText("Full photo") and isEnabled()).fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithText("Full photo").performScrollTo().performClick()
+        }
+        composeRule.onNodeWithText("Crop manually").performScrollTo().performClick()
+
+        val cropEditor = composeRule.onNodeWithTag(CROP_EDITOR_TEST_TAG).performScrollTo()
+        val canvasSize = cropEditor.fetchSemanticsNode().size
+        cropEditor.performTouchInput {
+            down(Offset(canvasSize.width * 0.1f, canvasSize.height * 0.1f))
+            moveBy(Offset(canvasSize.width * 0.3f, canvasSize.height * 0.3f))
+            up()
+        }
+
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule.onAllNodesWithTag(PAGE_PREVIEW_TEST_TAG).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        val croppedWidth =
+            runBlocking {
+                val app = composeRule.activity.application as KeepSheetApplication
+                val document =
+                    app.repository
+                        .observeDocuments()
+                        .first()
+                        .first()
+                val page = app.repository.getPages(document.id).first()
+                BitmapFactory.decodeFile(page.imagePath).width
+            }
+        // SamplePages.COVER is 900px wide; an undragged 10%-inset crop is exactly 720px
+        // ((0.9 - 0.1) * 900). Compose's test touch injection doesn't reproduce the full
+        // requested drag distance as faithfully as a real finger does (confirmed by hand
+        // against a real device while diagnosing this bug), so this only asserts the drag
+        // had *some* effect — before the fix it had none at all, landing on exactly 720.
+        assertTrue("cropped width was $croppedWidth, expected < 710 (720 = drag had no effect)", croppedWidth < 710)
     }
 
     private fun importTwoSamplePages() {

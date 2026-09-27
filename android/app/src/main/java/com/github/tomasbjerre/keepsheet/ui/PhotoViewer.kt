@@ -155,8 +155,11 @@ private suspend fun PointerInputScope.handleZoomPan(
                 onScaleChange(newScale)
             } else if (scale() > MIN_ZOOM_SCALE) {
                 val change = pressed.first()
+                // positionChange() must be read before consume() — it returns Offset.Zero
+                // for a change already marked consumed (keepsheet#69, same bug in CropEditor).
+                val drag = change.positionChange()
                 change.consume()
-                applyPan(panOffset() + change.positionChange())
+                applyPan(panOffset() + drag)
             }
         }
     }
