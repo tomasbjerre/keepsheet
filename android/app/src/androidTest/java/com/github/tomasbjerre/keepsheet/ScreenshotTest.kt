@@ -110,7 +110,9 @@ class ScreenshotTest {
         // Not a numbered Play listing slot — documents the full-screen photo viewer
         // (specs/ui-flows.md#3-page-review, keepsheet#67): read-only, no crop overlay.
         composeRule.onNodeWithText("View full size").performScrollTo().performClick()
-        composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertExists()
+        // Filtering the (larger, full-screen-sized) image takes longer than the crop
+        // preview's own smaller one — wait for it rather than a fixed assertExists().
+        awaitTagCount(PHOTO_VIEWER_TEST_TAG, 1)
         screenshot("page-review-viewer")
         composeRule.onNodeWithContentDescription("Close").performClick()
         composeRule.waitForIdle()

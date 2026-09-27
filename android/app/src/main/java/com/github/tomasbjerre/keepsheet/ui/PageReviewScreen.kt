@@ -174,6 +174,7 @@ fun PageReviewScreen(
                     uri = pageOrder[selected],
                     corners = corners[selected],
                     rotationDegrees = rotations[selected],
+                    filter = filters[selected],
                     detecting = detecting,
                     onCornersChange = { corners = corners.toMutableList().also { list -> list[selected] = it } },
                     onRedetect = {
@@ -343,11 +344,13 @@ private fun redetect(
     scope.launch { onFound(withContext(Dispatchers.IO) { detectCornersInImage(resolver, uri) }) }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun CropSection(
     uri: Uri,
     corners: Corners?,
     rotationDegrees: Int,
+    filter: PageFilter,
     detecting: Boolean,
     onCornersChange: (Corners?) -> Unit,
     onRedetect: () -> Unit,
@@ -359,6 +362,7 @@ private fun CropSection(
             uri = uri,
             corners = corners,
             rotationDegrees = rotationDegrees,
+            filter = filter,
             onCornersChange = { onCornersChange(it) },
         )
         Text(
@@ -385,7 +389,12 @@ private fun CropSection(
         RotateControls(rotationDegrees = rotationDegrees, onRotate = onRotate)
     }
     if (showViewer) {
-        PhotoViewerDialog(uri = uri, rotationDegrees = rotationDegrees, onDismiss = { showViewer = false })
+        PhotoViewerDialog(
+            uri = uri,
+            rotationDegrees = rotationDegrees,
+            filter = filter,
+            onDismiss = { showViewer = false },
+        )
     }
 }
 

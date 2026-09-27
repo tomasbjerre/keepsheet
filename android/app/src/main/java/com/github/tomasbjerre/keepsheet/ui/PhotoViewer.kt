@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.github.tomasbjerre.keepsheet.data.PageFilter
 import com.github.tomasbjerre.keepsheet.pdf.applyRotation
 import com.github.tomasbjerre.keepsheet.pdf.decodeScaled
 import kotlinx.coroutines.Dispatchers
@@ -51,24 +52,26 @@ private const val VIEWER_MAX_SIDE = 2000
  * keepsheet#67) — opened from [CropSection]'s "View full size" action. Same pinch-to-zoom
  * and drag-to-pan as [CropEditor]'s preview (reusing its pure [clampZoomScale]/
  * [clampPanOffset] math), but with no crop overlay and nothing to grab, so there's no risk
- * of moving a crop corner while just looking closely at a page. [rotationDegrees] matches
- * whatever's currently shown in the crop preview, so this is the exact same image, just
- * bigger — not a guess at what the saved page will look like.
+ * of moving a crop corner while just looking closely at a page. [rotationDegrees] and
+ * [filter] match whatever's currently shown in the crop preview, so this is the exact same
+ * image, just bigger — not a guess at what the saved page will look like.
  */
 @Composable
 fun PhotoViewerDialog(
     uri: Uri,
     rotationDegrees: Int,
+    filter: PageFilter,
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val resolver = LocalContext.current.contentResolver
         val image by
-            produceState<ImageBitmap?>(null, uri, rotationDegrees) {
+            produceState<ImageBitmap?>(null, uri, rotationDegrees, filter) {
                 value =
                     withContext(Dispatchers.IO) {
                         decodeScaled(resolver, uri, VIEWER_MAX_SIDE)
                             ?.let { applyRotation(it, rotationDegrees) }
+                            ?.let { filtered(it, filter) }
                             ?.asImageBitmap()
                     }
             }

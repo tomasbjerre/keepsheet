@@ -78,7 +78,9 @@ Reached from Capture's Done action, or directly from Home's Import.
   reviewed (see [Capture & Processing](capture-and-processing.md#document-filters)).
 - A rotate control for the currently selected page (see
   [Capture & Processing](capture-and-processing.md#page-rotation)),
-  visible immediately in that page's crop preview.
+  visible immediately in that page's crop preview — like the chosen
+  filter (above), so what the crop preview shows always matches what
+  will actually be saved, not just the original color photo.
 - The crop preview supports pinch-to-zoom and drag-to-pan, so fine detail
   (e.g. whether a filter choice keeps a photo on the page legible) can be
   inspected up close rather than only at the preview's normal size.

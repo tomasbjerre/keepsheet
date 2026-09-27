@@ -1,5 +1,6 @@
 package com.github.tomasbjerre.keepsheet.ui
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -29,8 +30,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.github.tomasbjerre.keepsheet.data.PageFilter
 import com.github.tomasbjerre.keepsheet.pdf.Corners
 import com.github.tomasbjerre.keepsheet.pdf.Point
+import com.github.tomasbjerre.keepsheet.pdf.applyFilter
 import com.github.tomasbjerre.keepsheet.pdf.applyRotation
 import com.github.tomasbjerre.keepsheet.pdf.decodeScaled
 import kotlinx.coroutines.Dispatchers
@@ -49,9 +52,10 @@ private const val GRAB_RADIUS_DP = 40
  * each corner can be dragged to adjust it. With null [corners] (nothing detected, or the
  * user chose the full photo) the whole photo is shown with no overlay.
  *
- * [rotationDegrees] (specs/capture-and-processing.md#page-rotation) is applied to the
- * preview itself, not just remembered — the whole point of showing it live here is that
- * what will be applied to the saved page is never a guess (keepsheet#52).
+ * [rotationDegrees] (specs/capture-and-processing.md#page-rotation) and [filter]
+ * (specs/capture-and-processing.md#document-filters) are both applied to the preview
+ * itself, not just remembered — the whole point of showing it live here is that what will
+ * be applied to the saved page is never a guess (keepsheet#52, keepsheet#70).
  *
  * Pinch-to-zoom and drag-to-pan (keepsheet#53) let a person inspect fine detail — e.g. whether
  * a filter choice keeps a photo on the page legible — without that detail being too small to
@@ -64,20 +68,23 @@ private const val GRAB_RADIUS_DP = 40
  * that changes what's being looked at) — a leftover zoomed-in viewport on a freshly shown image
  * would be confusing, not helpful.
  */
+@Suppress("LongMethod") // Compose screen: state hoisting keeps this one flat function readable.
 @Composable
 fun CropEditor(
     uri: Uri,
     corners: Corners?,
     rotationDegrees: Int,
+    filter: PageFilter,
     onCornersChange: (Corners) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val resolver = LocalContext.current.contentResolver
-    val image by produceState<ImageBitmap?>(null, uri, rotationDegrees) {
+    val image by produceState<ImageBitmap?>(null, uri, rotationDegrees, filter) {
         value =
             withContext(Dispatchers.IO) {
                 decodeScaled(resolver, uri, PREVIEW_MAX_SIDE)
                     ?.let { applyRotation(it, rotationDegrees) }
+                    ?.let { filtered(it, filter) }
                     ?.asImageBitmap()
             }
     }
@@ -225,4 +232,21 @@ private fun nearestCorner(
             }.orEmpty()
     val nearest = distances.indices.minByOrNull { distances[it] } ?: return -1
     return if (distances[nearest] <= maxDistance) nearest else -1
+}
+
+/** [PageFilter.COLOR] is a no-op (see [applyFilter]) — skip the pixel round-trip entirely
+ * for it rather than decode/re-encode a bitmap that ends up unchanged. Internal rather than
+ * private: [PhotoViewerDialog] reuses this same bitmap-filtering step. */
+internal fun filtered(
+    bitmap: Bitmap,
+    filter: PageFilter,
+): Bitmap {
+    if (filter == PageFilter.COLOR) return bitmap
+    val width = bitmap.width
+    val height = bitmap.height
+    val pixels = IntArray(width * height)
+    bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+    bitmap.recycle()
+    applyFilter(pixels, width, height, filter)
+    return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
 }
