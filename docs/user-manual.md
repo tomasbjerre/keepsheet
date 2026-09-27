@@ -55,7 +55,9 @@ the full photo, since the old crop no longer matches the new orientation.
 Pinch the crop preview to zoom in for a closer look — at whether a filter
 choice keeps a photo on the page legible, for instance — and drag to pan
 around while zoomed; dragging a crop corner still works the same as before
-even while zoomed in.
+even while zoomed in. Tap the **view full size** action to open the page
+by itself, full-screen — same pinch-to-zoom and pan, but no crop overlay,
+so there's nothing to accidentally drag while just looking closely.
 Tap **Save** to build the PDF — KeepSheet suggests a file name
 automatically, and starts recognizing text in the background so the
 document becomes searchable.

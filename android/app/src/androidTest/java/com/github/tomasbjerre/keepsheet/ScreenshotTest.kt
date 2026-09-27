@@ -26,6 +26,7 @@ import com.github.tomasbjerre.keepsheet.ui.CROP_EDITOR_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.FILTER_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.MERGE_PICKER_ROW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
+import com.github.tomasbjerre.keepsheet.ui.PHOTO_VIEWER_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -106,6 +107,13 @@ class ScreenshotTest {
         }
         composeRule.waitForIdle()
         screenshot("page-review-zoomed")
+        // Not a numbered Play listing slot — documents the full-screen photo viewer
+        // (specs/ui-flows.md#3-page-review, keepsheet#67): read-only, no crop overlay.
+        composeRule.onNodeWithText("View full size").performScrollTo().performClick()
+        composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertExists()
+        screenshot("page-review-viewer")
+        composeRule.onNodeWithContentDescription("Close").performClick()
+        composeRule.waitForIdle()
         // Not a numbered Play listing slot (see AGENTS.md/release pipeline convention) — just
         // documents the rotate control (specs/capture-and-processing.md#page-rotation,
         // keepsheet#52) taking visible effect in the crop preview above it.
