@@ -26,6 +26,7 @@ class DocumentBuilderTest {
     private lateinit var documentsDir: File
     private val importedPages = mutableListOf<Pair<Int, File>>()
     private val importedFilters = mutableListOf<PageFilter>()
+    private val importedRotations = mutableListOf<Int>()
     private val builtPdfs = mutableListOf<Pair<List<String>, File>>()
 
     @Before
@@ -52,9 +53,10 @@ class DocumentBuilderTest {
             repository = repository,
             pagesDir = pagesDir,
             documentsDir = documentsDir,
-            importPage = { index, filter, destination ->
+            importPage = { index, filter, rotationDegrees, destination ->
                 importedPages += index to destination
                 importedFilters += filter
+                importedRotations += rotationDegrees
                 destination.writeText("fake image $index")
             },
             buildPdf = { paths, destination ->
@@ -127,5 +129,31 @@ class DocumentBuilderTest {
 
             assertThat(repository.getPages(documentId).map { it.filter }).isEqualTo(filters)
             assertThat(importedFilters).isEqualTo(filters)
+        }
+
+    @Test
+    fun `defaults every page's rotation to 0 degrees when none is given`() =
+        runTest {
+            val documentId = builder().build(pageCount = 2, source = DocumentSource.SCANNED, finalizedAt = 1_000)
+
+            assertThat(repository.getPages(documentId).map { it.rotationDegrees }).containsExactly(0, 0)
+            assertThat(importedRotations).containsExactly(0, 0)
+        }
+
+    @Test
+    fun `stores and applies each page's own rotation`() =
+        runTest {
+            // See specs/capture-and-processing.md#page-rotation (keepsheet#52).
+            val rotations = listOf(90, 270)
+            val documentId =
+                builder().build(
+                    pageCount = 2,
+                    rotations = rotations,
+                    source = DocumentSource.SCANNED,
+                    finalizedAt = 1_000,
+                )
+
+            assertThat(repository.getPages(documentId).map { it.rotationDegrees }).isEqualTo(rotations)
+            assertThat(importedRotations).isEqualTo(rotations)
         }
 }

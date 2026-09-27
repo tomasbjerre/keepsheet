@@ -53,6 +53,8 @@ import com.github.tomasbjerre.keepsheet.pdf.buildPdfFromImages
 import com.github.tomasbjerre.keepsheet.pdf.copyImageForPage
 import com.github.tomasbjerre.keepsheet.pdf.defaultFilter
 import com.github.tomasbjerre.keepsheet.pdf.detectCornersInImage
+import com.github.tomasbjerre.keepsheet.pdf.rotatedClockwise
+import com.github.tomasbjerre.keepsheet.pdf.rotatedCounterClockwise
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -84,6 +86,7 @@ fun PageReviewScreen(
     var filters by remember { mutableStateOf(List(pages.size) { defaultFilter(null) }) }
     var selected by remember { mutableIntStateOf(0) }
     var corners by remember { mutableStateOf<List<Corners?>>(List(pages.size) { null }) }
+    var rotations by remember { mutableStateOf(List(pages.size) { 0 }) }
     var detecting by remember { mutableStateOf(true) }
     LaunchedEffect(pages) {
         corners = detectAll(context.contentResolver, pages)
@@ -103,6 +106,7 @@ fun PageReviewScreen(
                             saveAsDocument(
                                 pages,
                                 filters,
+                                rotations,
                                 corners,
                                 source,
                                 repository,
@@ -132,10 +136,10 @@ fun PageReviewScreen(
             Text("${pages.size} page(s)")
             PageThumbnails(pages, selected, onSelect = { selected = it })
             if (pages.isNotEmpty()) {
-                PageEditor(
+                CropSection(
                     uri = pages[selected],
                     corners = corners[selected],
-                    filter = filters[selected],
+                    rotationDegrees = rotations[selected],
                     detecting = detecting,
                     onCornersChange = { corners = corners.toMutableList().also { list -> list[selected] = it } },
                     onRedetect = {
@@ -143,8 +147,20 @@ fun PageReviewScreen(
                             corners = corners.toMutableList().also { list -> list[selected] = found }
                         }
                     },
-                    onPickFilter = { picked -> filters = filters.toMutableList().also { it[selected] = picked } },
-                    onApplyFilterToAll = { filters = List(pages.size) { filters[selected] } },
+                    onRotate = { degrees ->
+                        rotations = rotations.toMutableList().also { it[selected] = degrees }
+                        // The crop the user drew (or that detection found) was chosen against the
+                        // page's old orientation — a rectangle fit to a portrait photo makes no
+                        // sense once that photo is rotated 90°. Rather than silently keep a corner
+                        // quad that now crops the wrong region, drop back to "full photo" and let
+                        // the user re-detect or re-crop against the new orientation.
+                        corners = corners.toMutableList().also { it[selected] = null }
+                    },
+                )
+                FilterPicker(
+                    current = filters[selected],
+                    onPick = { picked -> filters = filters.toMutableList().also { it[selected] = picked } },
+                    onApplyToAll = { filters = List(pages.size) { filters[selected] } },
                 )
             }
         }
@@ -210,30 +226,22 @@ private fun redetect(
 }
 
 @Composable
-private fun PageEditor(
-    uri: Uri,
-    corners: Corners?,
-    filter: PageFilter,
-    detecting: Boolean,
-    onCornersChange: (Corners?) -> Unit,
-    onRedetect: () -> Unit,
-    onPickFilter: (PageFilter) -> Unit,
-    onApplyFilterToAll: () -> Unit,
-) {
-    CropSection(uri, corners, detecting, onCornersChange, onRedetect)
-    FilterPicker(current = filter, onPick = onPickFilter, onApplyToAll = onApplyFilterToAll)
-}
-
-@Composable
 private fun CropSection(
     uri: Uri,
     corners: Corners?,
+    rotationDegrees: Int,
     detecting: Boolean,
     onCornersChange: (Corners?) -> Unit,
     onRedetect: () -> Unit,
+    onRotate: (Int) -> Unit,
 ) {
     Column(modifier = Modifier.padding(top = 8.dp)) {
-        CropEditor(uri = uri, corners = corners, onCornersChange = { onCornersChange(it) })
+        CropEditor(
+            uri = uri,
+            corners = corners,
+            rotationDegrees = rotationDegrees,
+            onCornersChange = { onCornersChange(it) },
+        )
         Text(
             when {
                 detecting -> "Looking for the page edges…"
@@ -250,6 +258,29 @@ private fun CropSection(
             }
             TextButton(onClick = { onCornersChange(null) }, enabled = corners != null) { Text("Full photo") }
         }
+        RotateControls(rotationDegrees = rotationDegrees, onRotate = onRotate)
+    }
+}
+
+/**
+ * See specs/capture-and-processing.md#page-rotation: rotating shows its effect immediately in
+ * [CropEditor]'s preview above (this same screen), so what will be applied to the saved page
+ * is never a guess — the label states the pending rotation in degrees explicitly for the
+ * same reason.
+ */
+@Composable
+private fun RotateControls(
+    rotationDegrees: Int,
+    onRotate: (Int) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = { onRotate(rotatedCounterClockwise(rotationDegrees)) }) { Text("Rotate left") }
+        TextButton(onClick = { onRotate(rotatedClockwise(rotationDegrees)) }) { Text("Rotate right") }
+        Text("Rotation: $rotationDegrees°", style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -308,6 +339,7 @@ private fun SaveButton(
 private suspend fun saveAsDocument(
     pages: List<Uri>,
     filters: List<PageFilter>,
+    rotations: List<Int>,
     corners: List<Corners?>,
     source: DocumentSource,
     repository: DocumentRepository,
@@ -319,8 +351,8 @@ private suspend fun saveAsDocument(
             repository = repository,
             pagesDir = File(filesDir, "pages"),
             documentsDir = File(filesDir, "documents"),
-            importPage = { index, filter, destination ->
-                copyImageForPage(contentResolver, pages[index], destination, filter, corners[index])
+            importPage = { index, filter, rotationDegrees, destination ->
+                copyImageForPage(contentResolver, pages[index], destination, filter, rotationDegrees, corners[index])
             },
             buildPdf = { imagePaths, destination -> buildPdfFromImages(imagePaths, destination) },
         )
@@ -328,6 +360,7 @@ private suspend fun saveAsDocument(
         builder.build(
             pageCount = pages.size,
             filters = filters,
+            rotations = rotations,
             source = source,
             finalizedAt = System.currentTimeMillis(),
         )

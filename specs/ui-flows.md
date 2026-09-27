@@ -71,6 +71,9 @@ Reached from Capture's Done action, or directly from Home's Import.
 - A filter picker, applying to the currently selected page (with a
   "apply to all pages" shortcut, since most documents use one filter
   throughout).
+- A rotate control for the currently selected page (see
+  [Capture & Processing](capture-and-processing.md#page-rotation)),
+  visible immediately in that page's crop preview.
 - A **Save** action finalizes the document: builds the PDF from the pages
   in their current order/filters, creates a
   [Document](data-model.md#document) with an automatically suggested name

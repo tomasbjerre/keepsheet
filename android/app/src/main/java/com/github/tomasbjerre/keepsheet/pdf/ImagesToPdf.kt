@@ -16,24 +16,28 @@ import java.io.FileOutputStream
  * copy (see specs/data-model.md#page's `imagePath`).
  *
  * The decoded photo is oriented per its own EXIF tag before anything else touches it (see
- * [applyExifOrientation]) — [corners] were chosen against that same orientation in Page
- * Review's crop preview (keepsheet#50), so cropping the raw, unoriented pixels here would
- * grab the wrong region entirely. [corners], when given, are then flattened into an
- * upright page (specs/capture-and-processing.md#automatic-cropping-and-straightening);
- * then [filter] is applied to the pixels (specs/capture-and-processing.md#document-filters).
+ * [applyExifOrientation]), then [rotationDegrees] — the user's own choice in Page Review
+ * (specs/capture-and-processing.md#page-rotation) — is applied on top of that. [corners]
+ * were chosen against that same EXIF-then-rotated orientation in Page Review's crop preview
+ * (keepsheet#50, keepsheet#52), so cropping pixels in any other orientation here would grab
+ * the wrong region entirely. [corners], when given, are then flattened into an upright page
+ * (specs/capture-and-processing.md#automatic-cropping-and-straightening); then [filter] is
+ * applied to the pixels (specs/capture-and-processing.md#document-filters).
  */
 fun copyImageForPage(
     resolver: ContentResolver,
     source: Uri,
     destination: File,
     filter: PageFilter = PageFilter.COLOR,
+    rotationDegrees: Int = 0,
     corners: Corners? = null,
 ) {
     val decoded =
         resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it) }
             ?: error("Could not decode image at $source")
     val oriented = applyExifOrientation(decoded, resolver, source)
-    val bitmap = filtered(cropped(oriented, corners), filter)
+    val rotated = applyRotation(oriented, rotationDegrees)
+    val bitmap = filtered(cropped(rotated, corners), filter)
     try {
         FileOutputStream(destination).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
     } finally {

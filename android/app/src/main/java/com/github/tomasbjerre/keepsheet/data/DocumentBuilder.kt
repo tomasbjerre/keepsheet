@@ -20,17 +20,19 @@ class DocumentBuilder(
     private val repository: DocumentRepository,
     private val pagesDir: File,
     private val documentsDir: File,
-    private val importPage: (sourceIndex: Int, filter: PageFilter, destination: File) -> Unit,
+    private val importPage: (sourceIndex: Int, filter: PageFilter, rotationDegrees: Int, destination: File) -> Unit,
     private val buildPdf: (pageImagePaths: List<String>, destination: File) -> Long,
 ) {
     suspend fun build(
         pageCount: Int,
         filters: List<PageFilter> = List(pageCount) { PageFilter.COLOR },
+        rotations: List<Int> = List(pageCount) { 0 },
         source: DocumentSource,
         finalizedAt: Long,
     ): Long {
         require(pageCount > 0) { "A document needs at least one page." }
         require(filters.size == pageCount) { "Every page needs exactly one filter." }
+        require(rotations.size == pageCount) { "Every page needs exactly one rotation." }
         pagesDir.mkdirs()
         documentsDir.mkdirs()
 
@@ -43,8 +45,8 @@ class DocumentBuilder(
         val pageImagePaths = mutableListOf<String>()
         for (index in 0 until pageCount) {
             val pageFile = File(pagesDir, "${documentId}_$index.jpg")
-            importPage(index, filters[index], pageFile)
-            repository.appendPage(documentId, index, pageFile.absolutePath, filters[index])
+            importPage(index, filters[index], rotations[index], pageFile)
+            repository.appendPage(documentId, index, pageFile.absolutePath, filters[index], rotations[index])
             pageImagePaths += pageFile.absolutePath
         }
 
