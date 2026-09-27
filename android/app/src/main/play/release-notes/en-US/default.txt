@@ -1,8 +1,5 @@
-keepsheet 0.1.0
-- ci: attach an instruction video to every release (#64)
-- feat(capture): replace the shutter's text label with a symbol (#63)
-- feat(review): pinch-to-zoom and pan the crop preview (#62)
-- feat(review): preview each filter's effect in the filter picker (#61)
-- feat(review): rotate a page in Page Review (#60)
-- fix(capture): apply a photo's EXIF orientation consistently everywhere (#59)
-- fix(filters): threshold black-and-white locally, not globa
+keepsheet 0.1.1
+- fix: bump version
+- ci: publish releases to closed testing instead of internal track
+- chore(changelog): updating changelog
+- chore(android): update screenshots and play listing
