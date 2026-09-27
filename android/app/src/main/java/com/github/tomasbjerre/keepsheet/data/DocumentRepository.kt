@@ -80,17 +80,14 @@ class DocumentRepository(
 
     /**
      * Sets an automatically suggested name — see specs/file-naming.md#rules. Returns false
-     * (changing nothing) if the user already chose a name themselves.
+     * (changing nothing) if the user already chose a name themselves. A single conditional
+     * UPDATE (not a read-then-write) so a manual rename racing with this can never be
+     * clobbered — see [DocumentDao.updateNameIfNotUserEdited].
      */
     suspend fun applySuggestedName(
         documentId: Long,
         name: String,
-    ): Boolean {
-        val document = documentDao.getById(documentId) ?: return false
-        if (document.nameEditedByUser) return false
-        documentDao.update(document.copy(name = name))
-        return true
-    }
+    ): Boolean = documentDao.updateNameIfNotUserEdited(documentId, name) > 0
 
     /**
      * Deletes the document's row (cascading to its pages' rows) and every

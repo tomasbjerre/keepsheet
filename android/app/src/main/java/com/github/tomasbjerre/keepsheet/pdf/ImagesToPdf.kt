@@ -56,7 +56,7 @@ private fun filtered(
     bitmap.recycle()
     val pixels = IntArray(mutable.width * mutable.height)
     mutable.getPixels(pixels, 0, mutable.width, 0, 0, mutable.width, mutable.height)
-    applyFilter(pixels, filter)
+    applyFilter(pixels, mutable.width, mutable.height, filter)
     mutable.setPixels(pixels, 0, mutable.width, 0, 0, mutable.width, mutable.height)
     return mutable
 }

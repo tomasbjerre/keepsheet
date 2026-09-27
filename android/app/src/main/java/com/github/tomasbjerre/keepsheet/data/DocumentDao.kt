@@ -31,6 +31,22 @@ interface DocumentDao {
     @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun getById(id: Long): Document?
 
+    /**
+     * Sets [name] only if the user hasn't already named this document themselves — and
+     * atomically, in one statement, so a concurrent manual rename (see
+     * [DocumentRepository.renameDocument]) can never be read-modify-write clobbered by
+     * this racing in in between: read-then-check-then-write (`getById` + `update`) had a
+     * window where a manual rename could commit in between this read and this write,
+     * which would then overwrite it using this call's now-stale copy of the row — see
+     * [DocumentRepository.applySuggestedName]. Returns the number of rows changed (0 or
+     * 1) so the caller can tell whether it actually won.
+     */
+    @Query("UPDATE documents SET name = :name WHERE id = :id AND nameEditedByUser = 0")
+    suspend fun updateNameIfNotUserEdited(
+        id: Long,
+        name: String,
+    ): Int
+
     @Query("SELECT * FROM documents WHERE id = :id")
     fun observeById(id: Long): Flow<Document?>
 
