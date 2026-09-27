@@ -1,6 +1,7 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -69,7 +70,7 @@ class DocumentDetailScreenTest {
     private fun scanAndSaveOnePage() {
         composeRule.onNodeWithText("Scan").performClick()
         awaitShutterEnabled()
-        composeRule.onNodeWithText("Shutter").performClick()
+        composeRule.onNodeWithContentDescription("Shutter").performClick()
         awaitThumbnailCount(1)
         composeRule.onNodeWithText("Done").performClick()
         awaitSaveEnabled()
@@ -109,7 +110,7 @@ class DocumentDetailScreenTest {
 
     private fun awaitShutterEnabled() {
         composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
-            composeRule.onAllNodes(hasText("Shutter") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodes(hasContentDescription("Shutter") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
     }
 

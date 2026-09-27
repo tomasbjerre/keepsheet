@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -58,6 +59,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -65,6 +67,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -602,7 +606,23 @@ private fun CaptureActionsRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedButton(onClick = onImport, modifier = Modifier.weight(1f)) { Text("Import") }
-        Button(onClick = onShutter, enabled = canCapture, modifier = Modifier.weight(1f)) { Text("Shutter") }
+        Button(
+            onClick = onShutter,
+            enabled = canCapture,
+            modifier = Modifier.weight(1f).semantics { contentDescription = "Shutter" },
+        ) {
+            // A plain filled circle — the universal camera-shutter symbol (keepsheet#47) —
+            // rather than a Material icon: material-icons-core has no camera glyph, and
+            // pulling in material-icons-extended for one icon isn't worth the APK-size cost
+            // this project otherwise avoids (see android/README.md's dependency notes).
+            Box(
+                modifier =
+                    Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onPrimary),
+            )
+        }
         Button(onClick = onDone, enabled = doneEnabled, modifier = Modifier.weight(1f)) { Text("Done") }
     }
 }

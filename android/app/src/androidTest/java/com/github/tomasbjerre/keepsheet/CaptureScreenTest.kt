@@ -3,7 +3,7 @@ package com.github.tomasbjerre.keepsheet
 import android.Manifest
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -54,7 +54,7 @@ class CaptureScreenTest {
         composeRule.onNodeWithContentDescription("Retake page").performClick()
         composeRule.onNodeWithText("Retaking — tap the shutter for a new shot").assertExists()
 
-        composeRule.onNodeWithText("Shutter").performClick()
+        composeRule.onNodeWithContentDescription("Shutter").performClick()
         awaitThumbnailCount(1)
     }
 
@@ -90,9 +90,9 @@ class CaptureScreenTest {
      * especially on a cold-started/software-rendered emulator. */
     private fun capturePage() {
         composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
-            composeRule.onAllNodes(hasText("Shutter") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodes(hasContentDescription("Shutter") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("Shutter").performClick()
+        composeRule.onNodeWithContentDescription("Shutter").performClick()
         awaitThumbnailCount(1)
     }
 
