@@ -104,6 +104,33 @@ presented with a live preview of what it would actually do to the page
 being reviewed, not just its name, so the difference is obvious before
 picking one rather than something to infer from the label.
 
+## Printer-friendly pages
+
+A scanned or imported document's PDF pages are built to a standard paper
+size with margins, not sized to whatever pixel dimensions the source
+photo happens to have — a page sized to an arbitrary photo resolution has
+no defined margin and prints at an odd, non-standard size a printer has
+to guess how to scale, often clipping content at the edges.
+
+- Every page of a document uses the same **page size** — **A4** by
+  default, or **Letter** — chosen in [Page Review](ui-flows.md#3-page-review)
+  and remembered for every document finalized afterwards, until changed
+  again. This is the one choice KeepSheet remembers across a fresh app
+  start (see [Data Model](data-model.md#document-lifetime)): a UI
+  preference, not document content (see
+  [Permissions & Privacy](permissions-and-privacy.md#data-handling)).
+- Each page's content is scaled to fit within the chosen page size minus
+  a fixed margin on every side, preserving the content's own aspect ratio
+  (never stretched or cropped to fill the page) and centered within that
+  printable area.
+- A page's own shape (portrait or landscape, from its width and height
+  after crop/rotation) picks a matching portrait or landscape page
+  orientation, rather than forcing every page to portrait regardless of
+  its actual shape.
+- This applies to scanned and imported documents' own generated pages.
+  [Merged](merging.md) documents keep whatever page sizes their source
+  PDFs already had — merging preserves them unchanged, not re-rendered.
+
 ## Text recognition (OCR)
 
 After a document is finalized, KeepSheet recognizes text on each page so

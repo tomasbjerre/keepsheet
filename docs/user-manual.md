@@ -58,8 +58,11 @@ around while zoomed; dragging a crop corner still works the same as before
 even while zoomed in. Tap the **view full size** action to open the page
 by itself, full-screen — same pinch-to-zoom and pan, but no crop overlay,
 so there's nothing to accidentally drag while just looking closely.
-Tap **Save** to build the PDF — KeepSheet suggests a file name
-automatically, and starts recognizing text in the background so the
+**Page size** picks A4 or Letter for every page of this document, so
+printed pages come out at a standard size with a margin rather than an
+odd size with none — KeepSheet remembers this choice for the next
+document too. Tap **Save** to build the PDF — KeepSheet suggests a file
+name automatically, and starts recognizing text in the background so the
 document becomes searchable.
 
 ## Merge

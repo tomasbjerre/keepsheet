@@ -22,6 +22,8 @@ import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.github.tomasbjerre.keepsheet.data.PaperFormat
+import com.github.tomasbjerre.keepsheet.data.PaperFormatPreference
 import com.github.tomasbjerre.keepsheet.ui.CROP_EDITOR_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PHOTO_VIEWER_TEST_TAG
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.anyOf
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -167,6 +170,24 @@ class PageReviewScreenTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
+    }
+
+    /** See specs/capture-and-processing.md#printer-friendly-pages (keepsheet#72): the page
+     * size choice is remembered (via [PaperFormatPreference]) across documents until
+     * changed again. */
+    @Test
+    fun pageSizeChoicePersists() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        PaperFormatPreference(context).format = PaperFormat.A4 // a known starting state
+
+        importTwoSamplePages()
+
+        composeRule.onNodeWithText("Page size: A4").assertExists()
+        composeRule.onNodeWithText("Page size: A4").performClick()
+        composeRule.onNodeWithText("Letter").performClick()
+
+        composeRule.onNodeWithText("Page size: Letter").assertExists()
+        assertEquals(PaperFormat.LETTER, PaperFormatPreference(context).format)
     }
 
     private fun importTwoSamplePages() {

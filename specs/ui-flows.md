@@ -91,6 +91,10 @@ Reached from Capture's Done action, or directly from Home's Import.
   accidentally drag — with the same pinch-to-zoom and drag-to-pan as the
   crop preview, for a closer look without the risk of moving a crop
   corner while doing it.
+- A **page size** choice (A4 or Letter — see
+  [Capture & Processing](capture-and-processing.md#printer-friendly-pages)),
+  applying to every page of this document, remembered across documents
+  until changed again.
 - A **Save** action finalizes the document: builds the PDF from the pages
   in their current order/filters, creates a
   [Document](data-model.md#document) with an automatically suggested name

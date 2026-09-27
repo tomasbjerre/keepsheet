@@ -3,9 +3,11 @@ package com.github.tomasbjerre.keepsheet.pdf
 import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import com.github.tomasbjerre.keepsheet.data.PageFilter
+import com.github.tomasbjerre.keepsheet.data.PaperFormat
 import java.io.File
 import java.io.FileOutputStream
 
@@ -70,21 +72,28 @@ private fun filtered(
 }
 
 /**
- * Builds a one-page-per-image PDF at [destination] — each page sized to
- * match its source image — and returns the file's size in bytes.
+ * Builds a one-page-per-image PDF at [destination] and returns the file's size in bytes.
+ * Each page is a standard, printer-friendly [format] page (specs/capture-and-
+ * processing.md#printer-friendly-pages) — not sized to whatever pixel dimensions the
+ * source image happens to have — with its image scaled to fit inside a margin, preserving
+ * its own aspect ratio and orientation rather than the image filling the whole page.
  */
 fun buildPdfFromImages(
     imagePaths: List<String>,
     destination: File,
+    format: PaperFormat = PaperFormat.A4,
 ): Long {
     val document = PdfDocument()
     try {
         imagePaths.forEachIndexed { index, path ->
             val bitmap = BitmapFactory.decodeFile(path) ?: error("Could not decode image at $path")
             try {
-                val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, index + 1).create()
+                val (pageWidth, pageHeight) = format.pageSize(bitmap.width, bitmap.height)
+                val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, index + 1).create()
                 val page = document.startPage(pageInfo)
-                page.canvas.drawBitmap(bitmap, 0f, 0f, null)
+                val fit = fitContentRect(bitmap.width, bitmap.height, pageWidth, pageHeight)
+                val destRect = RectF(fit.left, fit.top, fit.left + fit.width, fit.top + fit.height)
+                page.canvas.drawBitmap(bitmap, null, destRect, null)
                 document.finishPage(page)
             } finally {
                 bitmap.recycle()
