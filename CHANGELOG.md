@@ -1,3 +1,21 @@
+## 0.1.0 (2026-09-27)
+
+### Features
+
+-  **capture**  replace the shutter's text label with a symbol (#63) ([6cfb5](https://github.com/tomasbjerre/keepsheet/commit/6cfb51988f5ef99) Tomas Bjerre)  
+-  **review**  pinch-to-zoom and pan the crop preview (#62) ([96cd0](https://github.com/tomasbjerre/keepsheet/commit/96cd01d6cb28f6d) Tomas Bjerre)  
+-  **review**  preview each filter's effect in the filter picker (#61) ([a4cae](https://github.com/tomasbjerre/keepsheet/commit/a4cae7c97f04430) Tomas Bjerre)  
+-  **review**  rotate a page in Page Review (#60) ([e3ad8](https://github.com/tomasbjerre/keepsheet/commit/e3ad8879ca56746) Tomas Bjerre)  
+
+### Bug Fixes
+
+-  **capture**  apply a photo's EXIF orientation consistently everywhere (#59) ([cc6db](https://github.com/tomasbjerre/keepsheet/commit/cc6db103c846763) Tomas Bjerre)  
+-  **filters**  threshold black-and-white locally, not globally (#58) ([12c2e](https://github.com/tomasbjerre/keepsheet/commit/12c2e7b65c63fe0) Tomas Bjerre)  
+-  **ui**  pad page review's save button for the nav bar (#56) ([06518](https://github.com/tomasbjerre/keepsheet/commit/065180841dc10fc) Tomas Bjerre)  
+
+### Other changes
+
+
 ## 0.0.2 (2026-09-26)
 
 ### Bug Fixes
