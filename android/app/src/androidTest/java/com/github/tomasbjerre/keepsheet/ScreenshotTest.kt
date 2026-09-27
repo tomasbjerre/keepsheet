@@ -1,8 +1,6 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
-import android.graphics.Bitmap
-import android.graphics.Color
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -27,7 +25,6 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import java.io.File
-import java.io.FileOutputStream
 
 /**
  * Not a correctness test — drives the real app to capture one screenshot
@@ -99,15 +96,14 @@ class ScreenshotTest {
         screenshot("5-merge")
     }
 
+    // A real photographed page (see keepsheet#55/SamplePages) rather than a plain color
+    // swatch, so the Merge/Document Detail screenshots this seeds show something that
+    // actually looks like a scanned document.
     private fun seedSecondDocument() {
         val app = composeRule.activity.application as KeepSheetApplication
         val documentsDir = File(composeRule.activity.filesDir, "documents").apply { mkdirs() }
         val pdfFile = File(documentsDir, "screenshot-second.pdf")
-        val imageFile = File(documentsDir, "screenshot-second-page-0.jpg")
-        val bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
-        bitmap.eraseColor(Color.BLUE)
-        FileOutputStream(imageFile).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
-        bitmap.recycle()
+        val imageFile = SamplePages.copyToCache(composeRule.activity, SamplePages.PAGE_05, "screenshot-second-page-0.jpg")
         buildPdfFromImages(listOf(imageFile.absolutePath), pdfFile)
         runBlocking {
             val documentId =
