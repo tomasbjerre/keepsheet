@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,7 +37,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -46,9 +46,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.github.tomasbjerre.keepsheet.data.DocumentBuilder
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
@@ -69,14 +73,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.roundToInt
 
 /**
  * Reached from Capture's Done action or Home's Import (see
- * specs/ui-flows.md#3-page-review). Filter picking and crop adjustment are here;
- * reorder, and retake aren't implemented here yet — Capture's own
- * thumbnail strip offers reorder/retake for a page before it ever reaches
- * this screen, but per spec those same actions belong here too (still to
- * do, alongside crop/filter — see android/app/build.gradle.kts).
+ * specs/ui-flows.md#3-page-review). Filter picking, crop adjustment, and reorder are
+ * here; retake isn't (Capture's own thumbnail strip offers retake for a page before it
+ * ever reaches this screen).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod") // Compose screen: state hoisting keeps this one flat function readable.
@@ -92,28 +95,45 @@ fun PageReviewScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
-    var filters by remember { mutableStateOf(List(pages.size) { defaultFilter(null) }) }
-    var selected by remember { mutableIntStateOf(0) }
-    var corners by remember { mutableStateOf<List<Corners?>>(List(pages.size) { null }) }
-    var rotations by remember { mutableStateOf(List(pages.size) { 0 }) }
+    // Reorderable copy of [pages] — permuted in lockstep with filters/corners/rotations
+    // (all four stay index-aligned to the same page) whenever the thumbnail strip below
+    // is dragged, so a page's filter/crop/rotation choices travel with it.
+    var pageOrder by remember(pages) { mutableStateOf(pages) }
+    var filters by remember(pages) { mutableStateOf(List(pages.size) { defaultFilter(null) }) }
+    // Tracked by uri rather than index so the selected page stays selected across a
+    // reorder, without having to shift an index by hand as pages move past it.
+    var selectedUri by remember(pages) { mutableStateOf(pages.firstOrNull()) }
+    val selected = pageOrder.indexOf(selectedUri).coerceAtLeast(0)
+    var corners by remember(pages) { mutableStateOf<List<Corners?>>(List(pages.size) { null }) }
+    var rotations by remember(pages) { mutableStateOf(List(pages.size) { 0 }) }
     var detecting by remember { mutableStateOf(true) }
     LaunchedEffect(pages) {
         corners = detectAll(context.contentResolver, pages)
         detecting = false
     }
 
+    fun reorder(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        pageOrder = pageOrder.moved(fromIndex, toIndex)
+        filters = filters.moved(fromIndex, toIndex)
+        corners = corners.moved(fromIndex, toIndex)
+        rotations = rotations.moved(fromIndex, toIndex)
+    }
+
     Scaffold(
         topBar = { PageReviewTopBar(enabled = !saving, onBack = onCancel) },
         bottomBar = {
             SaveButton(
-                enabled = pages.isNotEmpty() && !saving && !detecting,
+                enabled = pageOrder.isNotEmpty() && !saving && !detecting,
                 saving = saving,
                 onClick = {
                     saving = true
                     coroutineScope.launch {
                         val documentId =
                             saveAsDocument(
-                                pages,
+                                pageOrder,
                                 filters,
                                 rotations,
                                 corners,
@@ -142,17 +162,22 @@ fun PageReviewScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
         ) {
-            Text("${pages.size} page(s)")
-            PageThumbnails(pages, selected, onSelect = { selected = it })
-            if (pages.isNotEmpty()) {
+            Text("${pageOrder.size} page(s)")
+            PageThumbnails(
+                pages = pageOrder,
+                selected = selected,
+                onSelect = { index -> selectedUri = pageOrder[index] },
+                onReorder = ::reorder,
+            )
+            if (pageOrder.isNotEmpty()) {
                 CropSection(
-                    uri = pages[selected],
+                    uri = pageOrder[selected],
                     corners = corners[selected],
                     rotationDegrees = rotations[selected],
                     detecting = detecting,
                     onCornersChange = { corners = corners.toMutableList().also { list -> list[selected] = it } },
                     onRedetect = {
-                        redetect(coroutineScope, context.contentResolver, pages[selected]) { found ->
+                        redetect(coroutineScope, context.contentResolver, pageOrder[selected]) { found ->
                             corners = corners.toMutableList().also { list -> list[selected] = found }
                         }
                     },
@@ -167,11 +192,11 @@ fun PageReviewScreen(
                     },
                 )
                 FilterPicker(
-                    uri = pages[selected],
+                    uri = pageOrder[selected],
                     rotationDegrees = rotations[selected],
                     current = filters[selected],
                     onPick = { picked -> filters = filters.toMutableList().also { it[selected] = picked } },
-                    onApplyToAll = { filters = List(pages.size) { filters[selected] } },
+                    onApplyToAll = { filters = List(pageOrder.size) { filters[selected] } },
                 )
             }
         }
@@ -194,29 +219,111 @@ private fun PageReviewTopBar(
     )
 }
 
+private val REVIEW_THUMBNAIL_SIZE = 96.dp
+private val REVIEW_THUMBNAIL_SPACING = 8.dp
+
+/** Lets PageReviewScreenTest count/target page thumbnails without depending on their
+ * (dynamic) content. */
+const val REVIEW_THUMBNAIL_TEST_TAG = "review-thumbnail"
+
+/**
+ * See specs/ui-flows.md#3-page-review: reorder (drag), same interaction as Capture's own
+ * thumbnail strip (long-press then drag, so a plain tap still selects a page for the crop/
+ * filter controls below).
+ */
 @Composable
 private fun PageThumbnails(
     pages: List<Uri>,
     selected: Int,
     onSelect: (Int) -> Unit,
+    onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
 ) {
+    val density = LocalDensity.current
+    val itemExtentPx = with(density) { (REVIEW_THUMBNAIL_SIZE + REVIEW_THUMBNAIL_SPACING).toPx() }
+    var draggingUri by remember { mutableStateOf<Uri?>(null) }
+    var dragOffsetPx by remember { mutableStateOf(0f) }
+
     LazyRow(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(REVIEW_THUMBNAIL_SPACING),
     ) {
-        itemsIndexed(pages) { index, uri ->
+        itemsIndexed(pages, key = { _, uri -> uri }) { index, uri ->
+            val isDragging = uri == draggingUri
             AsyncImage(
                 model = uri,
                 contentDescription = "Page ${index + 1}",
                 modifier =
                     Modifier
-                        .size(96.dp)
+                        .size(REVIEW_THUMBNAIL_SIZE)
+                        .testTag(REVIEW_THUMBNAIL_TEST_TAG)
+                        .graphicsLayer { translationX = if (isDragging) dragOffsetPx else 0f }
+                        .zIndex(if (isDragging) 1f else 0f)
                         .border(if (index == selected) 3.dp else 0.dp, MaterialTheme.colorScheme.primary)
-                        .clickable { onSelect(index) },
+                        // Ahead of .clickable below so this drag detector sees (and, once a
+                        // drag actually starts, consumes) touch events first — otherwise
+                        // clickable's own gesture recognizer claims them and a long-press
+                        // drag never starts.
+                        .pointerInput(uri, pages) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    draggingUri = uri
+                                    dragOffsetPx = 0f
+                                },
+                                onDragEnd = {
+                                    draggingUri = null
+                                    dragOffsetPx = 0f
+                                },
+                                onDragCancel = {
+                                    draggingUri = null
+                                    dragOffsetPx = 0f
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    val currentIndex = pages.indexOf(uri)
+                                    val result =
+                                        computeReviewDrag(
+                                            dragAmount.x,
+                                            dragOffsetPx,
+                                            currentIndex,
+                                            pages.size,
+                                            itemExtentPx,
+                                        )
+                                    dragOffsetPx = result.offsetPx
+                                    result.targetIndex?.let { onReorder(currentIndex, it) }
+                                },
+                            )
+                        }.clickable { onSelect(index) },
             )
         }
     }
 }
+
+internal data class ReviewDragResult(
+    val offsetPx: Float,
+    val targetIndex: Int?,
+)
+
+/** Pure so it's easy to reason about (and unit test — see PageReviewDragTest) — same
+ * shape as Capture's own computeThumbnailDrag. */
+internal fun computeReviewDrag(
+    dragAmountX: Float,
+    currentOffsetPx: Float,
+    currentIndex: Int,
+    pageCount: Int,
+    itemExtentPx: Float,
+): ReviewDragResult {
+    val newOffset = currentOffsetPx + dragAmountX
+    if (currentIndex == -1) return ReviewDragResult(newOffset, null)
+    val slotShift = (newOffset / itemExtentPx).roundToInt()
+    val targetIndex = (currentIndex + slotShift).coerceIn(0, pageCount - 1)
+    if (targetIndex == currentIndex) return ReviewDragResult(newOffset, null)
+    return ReviewDragResult(newOffset - (targetIndex - currentIndex) * itemExtentPx, targetIndex)
+}
+
+internal fun <T> List<T>.moved(
+    fromIndex: Int,
+    toIndex: Int,
+): List<T> = toMutableList().also { it.add(toIndex, it.removeAt(fromIndex)) }
 
 /**
  * See specs/capture-and-processing.md#automatic-cropping-and-straightening: the detected
