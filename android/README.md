@@ -130,6 +130,26 @@ setup — seeded data, permissions, any sensor simulation a future camera
 test needs — tends to be app-specific. It runs as a sibling job from both
 CI and Release Android (`../.github/workflows/release_android.yml`).
 
+The same workflow also records an instruction video: a second,
+separate `connectedDebugAndroidTest` run scoped to just
+`InstructionVideoTest` (via
+`-Pandroid.testInstrumentationRunnerArguments.class=...`) so the
+recording shows one clean, deliberate walkthrough of the app rather
+than incidental activity from every other instrumented test running
+in whatever order alongside it. `adb shell screenrecord` runs for the
+duration of that test, is stopped with `SIGINT` once it finishes (so
+the mp4 container is finalized rather than corrupt), and the result is
+re-encoded with `ffmpeg` for player compatibility before being
+uploaded as an `instruction-video` workflow artifact — which the same
+shared `bundle-android-release.yaml` picks up and attaches to the
+GitHub Release, exactly like the `screenshots` artifact, if present
+(see [`tomasbjerre/wisp`](https://github.com/tomasbjerre/wisp) for the
+same pattern). `InstructionVideoTest` uses
+[Espresso Intents](https://developer.android.com/training/testing/espresso/intents)
+to stub Capture's Import photo picker with real sample pages
+(`SamplePages`, see keepsheet#55) rather than driving the system photo
+picker's own UI, which varies by API level/OEM.
+
 ## Play Store release
 
 1. [`../.github/workflows/release.yml`](../.github/workflows/release.yml)
