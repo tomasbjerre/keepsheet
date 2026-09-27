@@ -15,9 +15,12 @@ import java.io.FileOutputStream
  * once this session ends, so every imported page gets its own persistent
  * copy (see specs/data-model.md#page's `imagePath`).
  *
- * [corners], when given, are flattened into an upright page first
- * (specs/capture-and-processing.md#automatic-cropping-and-straightening); then [filter] is
- * applied to the pixels (specs/capture-and-processing.md#document-filters).
+ * The decoded photo is oriented per its own EXIF tag before anything else touches it (see
+ * [applyExifOrientation]) — [corners] were chosen against that same orientation in Page
+ * Review's crop preview (keepsheet#50), so cropping the raw, unoriented pixels here would
+ * grab the wrong region entirely. [corners], when given, are then flattened into an
+ * upright page (specs/capture-and-processing.md#automatic-cropping-and-straightening);
+ * then [filter] is applied to the pixels (specs/capture-and-processing.md#document-filters).
  */
 fun copyImageForPage(
     resolver: ContentResolver,
@@ -29,7 +32,8 @@ fun copyImageForPage(
     val decoded =
         resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it) }
             ?: error("Could not decode image at $source")
-    val bitmap = filtered(cropped(decoded, corners), filter)
+    val oriented = applyExifOrientation(decoded, resolver, source)
+    val bitmap = filtered(cropped(oriented, corners), filter)
     try {
         FileOutputStream(destination).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
     } finally {

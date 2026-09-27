@@ -30,7 +30,11 @@ fun warpToPage(
     return output
 }
 
-/** Decodes [uri] scaled down so its longest side is at most [maxSide] pixels. */
+/**
+ * Decodes [uri] scaled down so its longest side is at most [maxSide] pixels, oriented per
+ * its own EXIF tag (see [applyExifOrientation]) so callers — crop detection and the crop
+ * preview — agree with Coil's thumbnails on which way is up (keepsheet#50).
+ */
 fun decodeScaled(
     resolver: ContentResolver,
     uri: Uri,
@@ -43,7 +47,8 @@ fun decodeScaled(
     var sample = 1
     while (longest / (sample * 2) >= maxSide) sample *= 2
     val options = BitmapFactory.Options().apply { inSampleSize = sample }
-    return resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+    val decoded = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
+    return applyExifOrientation(decoded, resolver, uri)
 }
 
 /** Runs [detectPaperCorners] on a downscaled copy of the photo at [uri]; null if not confident. */

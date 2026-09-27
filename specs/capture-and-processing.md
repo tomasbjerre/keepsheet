@@ -30,6 +30,10 @@ photo:
 Each captured/imported page is processed to look scanned rather than
 photographed at an angle:
 
+- A photo's own orientation (e.g. the phone held sideways) is applied before
+  anything else touches it, so the page is upright and shown the same way in
+  every view — capture's thumbnail strip, the crop preview, the finalized
+  page — never sideways in one and upright in another.
 - Detect the paper's edges within the photo.
 - Correct the perspective (a rectangular warp) so the page fills the
   frame as if it had been scanned flat, not shot from an angle.
