@@ -207,7 +207,7 @@ ktlint {
 // Auth comes from the ANDROID_PUBLISHER_CREDENTIALS env var (a service account JSON), not
 // committed here — see https://github.com/Triple-T/gradle-play-publisher#authenticating.
 play {
-    track.set("internal")
+    track.set("alpha")
     defaultToAppBundles.set(true)
     // AUTO would need live Play credentials just to run `bundleRelease` (it resolves the
     // version code against the API as part of the build task itself). versionCode is

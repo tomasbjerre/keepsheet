@@ -169,12 +169,12 @@ picker's own UI, which varies by API level/OEM.
    [`bundle-android-release.yaml`](https://github.com/tomasbjerre/.github/blob/master/.github/workflows/bundle-android-release.yaml),
    which installs those screenshots into the Play listing and
    `../docs/screenshots/`, builds a signed App Bundle and APK, uploads the
-   bundle to the Play Console's **internal** track
+   bundle to the Play Console's **closed testing** track
    ([Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher)),
    attaches the build outputs to the GitHub Release, and updates
    `../CHANGELOG.md`.
 
-Promoting a release from internal → production is a manual step in the
+Promoting a release from closed testing → production is a manual step in the
 [Play Console](https://play.google.com/console) — intentionally not
 automated, so a real person always looks at a release before it reaches
 real users.
