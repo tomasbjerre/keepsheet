@@ -31,6 +31,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -94,6 +96,7 @@ fun PageReviewScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var saving by remember { mutableStateOf(false) }
     // Reorderable copy of [pages] — permuted in lockstep with filters/corners/rotations
     // (all four stay index-aligned to the same page) whenever the thumbnail strip below
@@ -124,6 +127,7 @@ fun PageReviewScreen(
 
     Scaffold(
         topBar = { PageReviewTopBar(enabled = !saving, onBack = onCancel) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             SaveButton(
                 enabled = pageOrder.isNotEmpty() && !saving && !detecting,
@@ -178,7 +182,8 @@ fun PageReviewScreen(
                     detecting = detecting,
                     onCornersChange = { corners = corners.toMutableList().also { list -> list[selected] = it } },
                     onRedetect = {
-                        redetect(coroutineScope, context.contentResolver, pageOrder[selected]) { found ->
+                        val uri = pageOrder[selected]
+                        redetect(coroutineScope, context.contentResolver, uri, snackbarHostState) { found ->
                             corners = corners.toMutableList().also { list -> list[selected] = found }
                         }
                     },
@@ -335,13 +340,24 @@ private suspend fun detectAll(
     pages: List<Uri>,
 ): List<Corners?> = withContext(Dispatchers.IO) { pages.map { detectCornersInImage(resolver, it) } }
 
+/** See specs/capture-and-processing.md#automatic-cropping-and-straightening (keepsheet#68):
+ * always says what happened, even when the outcome doesn't change the crop preview at
+ * all — a preview that looks the same before and after tapping "Detect edges" is
+ * otherwise indistinguishable from the tap having done nothing. */
 private fun redetect(
     scope: CoroutineScope,
     resolver: ContentResolver,
     uri: Uri,
+    snackbarHostState: SnackbarHostState,
     onFound: (Corners?) -> Unit,
 ) {
-    scope.launch { onFound(withContext(Dispatchers.IO) { detectCornersInImage(resolver, uri) }) }
+    scope.launch {
+        val found = withContext(Dispatchers.IO) { detectCornersInImage(resolver, uri) }
+        onFound(found)
+        val message =
+            if (found != null) "Found the page edges." else "Detection found nothing — still using the full photo."
+        snackbarHostState.showSnackbar(message)
+    }
 }
 
 @Suppress("LongParameterList")

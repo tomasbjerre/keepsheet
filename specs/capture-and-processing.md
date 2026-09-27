@@ -51,6 +51,11 @@ photographed at an angle:
   page that already fills the frame needs no crop (the full photo is kept).
 - The user can always drag the corners, re-run detection, crop manually
   when nothing was detected, or choose the full photo (no crop).
+- Re-running detection always gives explicit feedback about the outcome —
+  edges found, or none found (falling back to the full photo) — even when
+  that outcome doesn't change what's currently shown. A crop preview that
+  looks identical before and after tapping the button is indistinguishable
+  from the tap having done nothing at all.
 
 ## Page rotation
 
