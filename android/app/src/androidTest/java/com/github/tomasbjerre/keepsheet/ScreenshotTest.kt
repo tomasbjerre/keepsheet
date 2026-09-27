@@ -129,6 +129,36 @@ class ScreenshotTest {
         composeRule.onNodeWithText("Crop manually").performScrollTo().performClick()
         composeRule.waitForIdle()
         screenshot("7-page-review-crop")
+        // Not a numbered Play listing slot — documents "Detect edges" always giving
+        // feedback (specs/capture-and-processing.md#automatic-cropping-and-straightening,
+        // keepsheet#68: re-running detection used to give no sign it had done anything).
+        // Either outcome's message is fine — whether this sample page's edges are
+        // detected isn't the point of this capture.
+        composeRule.onNodeWithText("Detect edges").performScrollTo().performClick()
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule
+                .onAllNodes(hasText("Found the page edges.") or hasText("Detection found nothing — still using the full photo."))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        screenshot("page-review-detect-edges-feedback")
+        // The snackbar's own showSnackbar() coroutine is still suspended for its display
+        // duration at this point, which confuses Compose test's idle-detection enough to
+        // make the next actions land unreliably — wait for it to actually dismiss first.
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule
+                .onAllNodes(hasText("Found the page edges.") or hasText("Detection found nothing — still using the full photo."))
+                .fetchSemanticsNodes()
+                .isEmpty()
+        }
+        // Detect edges above may have found (and switched to) a different quad than the
+        // 10%-inset default — reset to that known quad so the drag below starts from a
+        // predictable corner position.
+        if (composeRule.onAllNodes(hasText("Full photo") and isEnabled()).fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithText("Full photo").performScrollTo().performClick()
+        }
+        composeRule.onNodeWithText("Crop manually").performScrollTo().performClick()
+        composeRule.onNodeWithText("Drag the corners to adjust the crop.").performScrollTo().assertExists()
         // Not a numbered Play listing slot — documents dragging a crop corner actually
         // moving it (specs/capture-and-processing.md#automatic-cropping-and-straightening,
         // keepsheet#69: a corner used to silently ignore every drag).

@@ -149,6 +149,26 @@ class PageReviewScreenTest {
         assertTrue("cropped width was $croppedWidth, expected < 710 (720 = drag had no effect)", croppedWidth < 710)
     }
 
+    /** See specs/capture-and-processing.md#automatic-cropping-and-straightening
+     * (keepsheet#68): re-running detection always gives explicit feedback, even when the
+     * outcome doesn't change anything visible in the crop preview — otherwise a
+     * no-change outcome looks identical to the tap having done nothing at all. Checks for
+     * either outcome's message since whether this real photographed sample page's edges
+     * are detected isn't the point of this test. */
+    @Test
+    fun detectEdgesAlwaysShowsFeedback() {
+        importTwoSamplePages()
+
+        composeRule.onNodeWithText("Detect edges").performScrollTo().performClick()
+
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            composeRule
+                .onAllNodes(hasText("Found the page edges.") or hasText("Detection found nothing — still using the full photo."))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+    }
+
     private fun importTwoSamplePages() {
         composeRule.onNodeWithText("Scan").performClick()
         composeRule.waitForIdle()
