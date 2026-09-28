@@ -1,3 +1,12 @@
+## 0.2.1 (2026-09-28)
+
+### Bug Fixes
+
+-  make Page Review usable on narrow screens; keep a name being typed (#83) ([9fa3b](https://github.com/tomasbjerre/keepsheet/commit/9fa3b03d64ad7ae) Tomas Bjerre)  
+
+### Other changes
+
+
 ## 0.1.1 (2026-09-27)
 
 ### Bug Fixes
