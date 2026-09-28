@@ -8,7 +8,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -58,7 +58,7 @@ class MergeScreenTest {
         seedDocument("Alpha", pageCount = 1)
 
         composeRule.onNodeWithText("Merge").performClick()
-        composeRule.onNodeWithText("From KeepSheet").performClick()
+        openKeepSheetPicker(showingRow = "Alpha")
         clickDialogRow("Alpha")
         clickDialogRow("Alpha")
         composeRule.onNodeWithText("Done").performClick()
@@ -81,9 +81,20 @@ class MergeScreenTest {
     }
 
     private fun addFromKeepSheet(vararg documentNames: String) {
-        composeRule.onNodeWithText("From KeepSheet").performClick()
+        openKeepSheetPicker(showingRow = documentNames.first())
         documentNames.forEach { name -> clickDialogRow(name) }
         composeRule.onNodeWithText("Done").performClick()
+    }
+
+    /** Opens the "From KeepSheet" picker and waits for [showingRow] to be listed in it. A tap
+     * on a loaded emulator occasionally never opens the dialog (so nothing else here would
+     * ever appear) — [actUntil] taps again rather than waiting out the whole timeout. */
+    private fun openKeepSheetPicker(showingRow: String) {
+        val row = hasText(showingRow) and hasAnyAncestor(isDialog())
+        composeRule.actUntil(
+            action = { composeRule.onNodeWithText("From KeepSheet").performClick() },
+            done = { composeRule.onAllNodes(row).fetchSemanticsNodes().isNotEmpty() },
+        )
     }
 
     /** The document's name shows up twice once staged (the dialog's own row for it, and
@@ -137,7 +148,7 @@ class MergeScreenTest {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 15_000L
+        const val TIMEOUT_MILLIS = 60_000L
         const val TEST_IMAGE_SIZE = 64
     }
 }

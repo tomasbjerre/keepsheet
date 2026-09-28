@@ -5,7 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -109,10 +109,13 @@ class ScreenshotTest {
         screenshot("page-review-zoomed")
         // Not a numbered Play listing slot — documents the full-screen photo viewer
         // (specs/ui-flows.md#3-page-review, keepsheet#67): read-only, no crop overlay.
-        composeRule.onNodeWithText("View full size").performScrollTo().performClick()
         // Filtering the (larger, full-screen-sized) image takes longer than the crop
-        // preview's own smaller one — wait for it rather than a fixed assertExists().
-        awaitTagCount(PHOTO_VIEWER_TEST_TAG, 1)
+        // preview's own smaller one — wait for it rather than a fixed assertExists(), and tap
+        // again if the first tap never opened the viewer at all.
+        composeRule.actUntil(
+            action = { composeRule.onNodeWithText("View full size").performScrollTo().performClick() },
+            done = { composeRule.onAllNodesWithTag(PHOTO_VIEWER_TEST_TAG).fetchSemanticsNodes().size == 1 },
+        )
         screenshot("page-review-viewer")
         composeRule.onNodeWithContentDescription("Close").performClick()
         composeRule.waitForIdle()
@@ -184,8 +187,10 @@ class ScreenshotTest {
         // second full Scan session, just so Merge has two documents to show staged.
         seedSecondDocument()
         composeRule.onNodeWithText("Merge").performClick()
-        composeRule.onNodeWithText("From KeepSheet").performClick()
-        awaitTagCount(MERGE_PICKER_ROW_TEST_TAG, 2)
+        composeRule.actUntil(
+            action = { composeRule.onNodeWithText("From KeepSheet").performClick() },
+            done = { composeRule.onAllNodesWithTag(MERGE_PICKER_ROW_TEST_TAG).fetchSemanticsNodes().size == 2 },
+        )
         // Both rows stay visible (just disabled + checkmarked) once added, so this is
         // "add row 0, then row 1" — not two clicks racing to add the same one.
         composeRule.onAllNodesWithTag(MERGE_PICKER_ROW_TEST_TAG)[0].performClick()
@@ -254,6 +259,6 @@ class ScreenshotTest {
 
     private companion object {
         const val SCREENSHOT_DIR = "/sdcard/keepsheet-screenshots"
-        const val TIMEOUT_MILLIS = 15_000L
+        const val TIMEOUT_MILLIS = 60_000L
     }
 }

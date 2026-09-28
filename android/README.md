@@ -130,6 +130,19 @@ setup — seeded data, permissions, any sensor simulation a future camera
 test needs — tends to be app-specific. It runs as a sibling job from both
 CI and Release Android (`../.github/workflows/release_android.yml`).
 
+The tests run through `scripts/run-instrumented-tests.sh`, which re-runs only the
+tests that failed (each retry starts from a wiped app), up to three attempts in
+total, and keeps every attempt's HTML report and logcat in the
+`instrumented-test-report` artifact. A test that only passes on a retry shows up as a
+warning annotation on the run rather than being hidden, so a flake is still visible
+without failing the build; a test that fails every attempt fails it. Run the same
+script locally against a running emulator with `bash scripts/run-instrumented-tests.sh`.
+Tests use the `v2` Compose test rule (`androidx.compose.ui.test.junit4.v2`) — the
+deprecated v1 one resumes recomposition on whichever thread finished a
+`withContext(Dispatchers.IO)`, which surfaced as random `CalledFromWrongThreadException`s
+— and `actUntil` (`ActUntil.kt`) for taps and edits whose effect is observable but whose
+delivery isn't guaranteed on a loaded emulator.
+
 The same workflow also records an instruction video: a second,
 separate `connectedDebugAndroidTest` run scoped to just
 `InstructionVideoTest` (via

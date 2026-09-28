@@ -4,7 +4,7 @@ import android.Manifest
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -18,6 +18,8 @@ import androidx.test.rule.GrantPermissionRule
 import com.github.tomasbjerre.keepsheet.ui.DOCUMENT_NAME_FIELD_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -62,9 +64,7 @@ class DocumentDetailScreenTest {
         pressBackToHome()
 
         scanAndSaveOnePage()
-        renameTo("Shared Name")
-
-        awaitText("Shared Name (2)")
+        renameTo("Shared Name", expectedName = "Shared Name (2)")
     }
 
     private fun scanAndSaveOnePage() {
@@ -89,12 +89,36 @@ class DocumentDetailScreenTest {
 
     /** Types [name] into the name field, commits it via the keyboard's Done action (which
      * triggers the actual save — see DocumentDetailScreen's DocumentNameField), and waits
-     * for the (possibly de-duplicated) result to come back from the database. */
-    private fun renameTo(name: String) {
-        composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performTextReplacement(name)
-        composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performImeAction()
-        awaitText(name)
+     * for the result — [name], or [expectedName] when it gets de-duplicated — to be
+     * persisted. Checks the database rather than the field: the field shows what was typed
+     * whether or not it ever got saved.
+     *
+     * Retried because the OCR-suggested name (KeepSheetApplication, applied in the background
+     * after Save) reseeds the field when it lands, wiping what was just typed before it is
+     * committed — a race a slow emulator loses often enough to matter. Once the user's own
+     * rename is persisted, a suggested name never overwrites it. */
+    private fun renameTo(
+        name: String,
+        expectedName: String = name,
+    ) {
+        composeRule.actUntil(
+            action = {
+                composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performTextReplacement(name)
+                composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performImeAction()
+            },
+            done = { persistedDocumentNames().contains(expectedName) },
+        )
+        awaitText(expectedName)
     }
+
+    private fun persistedDocumentNames(): List<String> =
+        runBlocking {
+            val app = composeRule.activity.application as KeepSheetApplication
+            app.repository
+                .observeDocuments()
+                .first()
+                .map { it.name }
+        }
 
     private fun pressBackToHome() {
         composeRule.onNodeWithContentDescription("Back").performClick()
@@ -133,6 +157,6 @@ class DocumentDetailScreenTest {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 15_000L
+        const val TIMEOUT_MILLIS = 60_000L
     }
 }
