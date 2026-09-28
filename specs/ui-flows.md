@@ -91,6 +91,9 @@ Reached from Capture's Done action, or directly from Home's Import.
   accidentally drag — with the same pinch-to-zoom and drag-to-pan as the
   crop preview, for a closer look without the risk of moving a crop
   corner while doing it.
+- Every action on this screen stays reachable on a narrow screen (down to
+  320dp wide) and with large system fonts: a row of actions wraps onto
+  further lines instead of running off the edge of the screen.
 - A **page size** choice (A4 or Letter — see
   [Capture & Processing](capture-and-processing.md#printer-friendly-pages)),
   applying to every page of this document, remembered across documents
