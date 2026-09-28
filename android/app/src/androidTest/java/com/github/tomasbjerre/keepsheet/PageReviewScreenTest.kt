@@ -7,7 +7,6 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.SystemClock
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
@@ -18,7 +17,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntSize
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
@@ -125,11 +123,8 @@ class PageReviewScreenTest {
 
         val cropEditor = composeRule.onNodeWithTag(CROP_EDITOR_TEST_TAG).performScrollTo()
         awaitCropEditorSizeSettled()
-        cropEditor.performTouchInput {
-            down(Offset(width * 0.1f, height * 0.1f))
-            moveBy(Offset(width * 0.3f, height * 0.3f))
-            up()
-        }
+        cropEditor.dragACropCornerInward()
+        composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Save").performClick()
         composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
