@@ -1,5 +1,3 @@
-keepsheet 0.1.1
-- fix: bump version
-- ci: publish releases to closed testing instead of internal track
-- chore(changelog): updating changelog
-- chore(android): update screenshots and play listing
+keepsheet 0.2.1
+- fix: make Page Review usable on narrow screens; keep a name being typed (#83)
+- ci: make instrumented tests robust against emulator flakiness (#81)
