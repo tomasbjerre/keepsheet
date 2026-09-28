@@ -130,7 +130,10 @@ A saved document — scanned, imported, or merged.
 
 - A preview of the PDF's pages (thumbnails, or a swipeable page view).
 - The document's **name** (see [File Naming](file-naming.md)), editable
-  in place at any time.
+  in place at any time. A name being typed is never replaced by one
+  arriving from elsewhere (such as the automatically suggested name from
+  background [OCR](capture-and-processing.md#text-recognition-ocr)) —
+  what the user typed is what gets saved.
 - Summary info: date, page count, file size.
 - **Back**, **Share** (hands the PDF to the platform's share sheet),
   and **Delete** controls.

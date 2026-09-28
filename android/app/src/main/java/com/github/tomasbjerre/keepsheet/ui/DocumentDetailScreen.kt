@@ -182,20 +182,31 @@ private fun DocumentNameField(
     repository: DocumentRepository,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    // Reseeded only when a different document loads, or when a rename lands from elsewhere
-    // (e.g. a future OCR-driven rename) — not on every recomposition, or it would fight
-    // with what the user is currently typing.
-    var nameInput by remember(document.id, document.name) { mutableStateOf(document.name) }
+    var nameInput by remember(document.id) { mutableStateOf(document.name) }
+    // True from the first keystroke until the rename is committed. While it is, a name arriving
+    // from elsewhere (the OCR-suggested one, see specs/file-naming.md) must not replace what is
+    // being typed — the user's own name wins, and a suggestion never overwrites it anyway.
+    var edited by remember(document.id) { mutableStateOf(false) }
+
+    // Follows the stored name — including a rename landing from elsewhere, and this field's own
+    // rename coming back (possibly de-duplicated) — unless the user is mid-edit.
+    LaunchedEffect(document.name) {
+        if (!edited) nameInput = document.name
+    }
 
     fun save() {
         if (nameInput != document.name) {
             coroutineScope.launch { renameDocument(repository, document.id, nameInput) }
         }
+        edited = false
     }
 
     TextField(
         value = nameInput,
-        onValueChange = { nameInput = it },
+        onValueChange = {
+            nameInput = it
+            edited = true
+        },
         modifier =
             Modifier
                 .fillMaxWidth()

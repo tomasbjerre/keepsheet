@@ -1,6 +1,7 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
@@ -65,6 +66,38 @@ class DocumentDetailScreenTest {
 
         scanAndSaveOnePage()
         renameTo("Shared Name", expectedName = "Shared Name (2)")
+    }
+
+    /** See specs/ui-flows.md#5-document-detail: the suggested name OCR applies in the background
+     * (here forced, so the timing isn't left to how fast the emulator's OCR happens to be) must
+     * not replace a name that is being typed. */
+    @Test
+    fun aSuggestedNameArrivingWhileTypingDoesNotReplaceWhatWasTyped() {
+        scanAndSaveOnePage()
+        composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performTextReplacement("Typed by hand")
+
+        val nameBefore = persistedDocumentNames().single()
+        runBlocking {
+            val app = composeRule.activity.application as KeepSheetApplication
+            val document =
+                app.repository
+                    .observeDocuments()
+                    .first()
+                    .single()
+            app.repository.applySuggestedName(document.id, "Suggested by OCR")
+        }
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) { persistedDocumentNames().single() != nameBefore }
+
+        // Give the new name time to reach the screen (it arrives through an asynchronous
+        // database flow), then check the field still holds what was typed.
+        repeat(SETTLE_CHECKS) {
+            Thread.sleep(SETTLE_CHECK_MILLIS)
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).assertTextEquals("Typed by hand")
+        }
+
+        composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performImeAction()
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) { persistedDocumentNames().single() == "Typed by hand" }
     }
 
     private fun scanAndSaveOnePage() {
@@ -158,5 +191,7 @@ class DocumentDetailScreenTest {
 
     private companion object {
         const val TIMEOUT_MILLIS = 60_000L
+        const val SETTLE_CHECKS = 10
+        const val SETTLE_CHECK_MILLIS = 200L
     }
 }
