@@ -6,11 +6,12 @@ import android.content.ClipData
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.SystemClock
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntSize
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -90,12 +92,13 @@ class PageReviewScreenTest {
     fun viewFullSizeOpensAndClosesThePhotoViewer() {
         importTwoSamplePages()
 
-        composeRule.onNodeWithText("View full size").performScrollTo().performClick()
         // Filtering the (larger, full-screen-sized) image takes longer than the crop
-        // preview's own smaller one — wait for it rather than a fixed assertExists().
-        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
-            composeRule.onAllNodesWithTag(PHOTO_VIEWER_TEST_TAG).fetchSemanticsNodes().isNotEmpty()
-        }
+        // preview's own smaller one — wait for it rather than a fixed assertExists(), and tap
+        // again if the first tap never opened the viewer at all.
+        composeRule.actUntil(
+            action = { composeRule.onNodeWithText("View full size").performScrollTo().performClick() },
+            done = { composeRule.onAllNodesWithTag(PHOTO_VIEWER_TEST_TAG).fetchSemanticsNodes().isNotEmpty() },
+        )
 
         composeRule.onNodeWithContentDescription("Close").performClick()
         composeRule.onNodeWithTag(PHOTO_VIEWER_TEST_TAG).assertDoesNotExist()
@@ -121,10 +124,10 @@ class PageReviewScreenTest {
         composeRule.onNodeWithText("Crop manually").performScrollTo().performClick()
 
         val cropEditor = composeRule.onNodeWithTag(CROP_EDITOR_TEST_TAG).performScrollTo()
-        val canvasSize = cropEditor.fetchSemanticsNode().size
+        awaitCropEditorSizeSettled()
         cropEditor.performTouchInput {
-            down(Offset(canvasSize.width * 0.1f, canvasSize.height * 0.1f))
-            moveBy(Offset(canvasSize.width * 0.3f, canvasSize.height * 0.3f))
+            down(Offset(width * 0.1f, height * 0.1f))
+            moveBy(Offset(width * 0.3f, height * 0.3f))
             up()
         }
 
@@ -223,6 +226,24 @@ class PageReviewScreenTest {
             ).respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, resultData))
     }
 
+    /** CropEditor's canvas is square until its bitmap has been decoded, then takes the photo's
+     * aspect ratio, moving every corner with it — a drag aimed at a corner before that lands
+     * on empty canvas and does nothing. Nothing observable says "decoded", so wait for the
+     * size to hold still instead. */
+    private fun awaitCropEditorSizeSettled() {
+        var lastSize = IntSize.Zero
+        var lastChangeMillis = SystemClock.uptimeMillis()
+        composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
+            val size = composeRule.onNodeWithTag(CROP_EDITOR_TEST_TAG).fetchSemanticsNode().size
+            val now = SystemClock.uptimeMillis()
+            if (size != lastSize) {
+                lastSize = size
+                lastChangeMillis = now
+            }
+            size.height > 0 && now - lastChangeMillis >= SIZE_SETTLED_MILLIS
+        }
+    }
+
     private fun awaitEnabled(text: String) {
         composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) {
             composeRule.onAllNodes(hasText(text) and isEnabled()).fetchSemanticsNodes().isNotEmpty()
@@ -230,6 +251,7 @@ class PageReviewScreenTest {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 15_000L
+        const val TIMEOUT_MILLIS = 60_000L
+        const val SIZE_SETTLED_MILLIS = 1_500L
     }
 }

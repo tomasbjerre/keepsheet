@@ -1,7 +1,7 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.os.Build
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -63,6 +63,6 @@ class HomeScreenTest {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 5_000L
+        const val TIMEOUT_MILLIS = 60_000L
     }
 }

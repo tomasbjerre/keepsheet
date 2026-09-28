@@ -15,6 +15,8 @@ defaults:
 jobs:
   screenshots:
     runs-on: ubuntu-latest
+    # A hung emulator would otherwise sit there until GitHub's 6 hour default.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
 
@@ -51,7 +53,9 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-35-google_apis-x86_64
+          # The AVD's hardware settings (ram-size etc.) are baked in when it is created, so
+          # they belong in the key: change one below and bump the suffix here with it.
+          key: avd-35-google_apis-x86_64-4g
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -60,6 +64,12 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
+          # The default 2 GB starves the app (it decodes full-size photos) and the system
+          # UI on a software-rendered emulator, which shows up as stalled frames and
+          # "isn't responding" dialogs that make UI tests time out at random.
+          ram-size: 4096M
+          heap-size: 576M
+          emulator-boot-timeout: 900
           force-avd-creation: false
           # Camera capture (specs/capture-and-processing.md) is exercised against a
           # webcam-backed virtual camera in CI rather than a real one, so this omits
@@ -74,6 +84,9 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
+          ram-size: 4096M
+          heap-size: 576M
+          emulator-boot-timeout: 900
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           working-directory: ./android
@@ -86,9 +99,13 @@ jobs:
             # taken, so a later `adb pull` doesn't silently return stale images
             # alongside the current ones.
             adb shell rm -rf /sdcard/keepsheet-screenshots
-            # The runner executes each line as its own command, so the retry is a
-            # single-line `||`: one retry absorbs an occasional emulator timing flake.
-            ./gradlew connectedDebugAndroidTest || ./gradlew connectedDebugAndroidTest
+            # A "System UI isn't responding" dialog on a loaded emulator covers the app and
+            # swallows taps — the most common reason an otherwise fine UI test times out.
+            adb shell settings put global hide_error_dialogs 1
+            # The runner executes each line as its own command, so retrying lives in this
+            # script: it re-runs only the tests that failed (a fresh app each time), not the
+            # whole suite, so one unlucky test no longer costs a full second run.
+            bash scripts/run-instrumented-tests.sh
             adb pull /sdcard/keepsheet-screenshots screenshots-raw || mkdir -p screenshots-raw
 
             # Instruction video (keepsheet#54), attached to every GitHub Release by the
@@ -106,7 +123,10 @@ jobs:
             ./gradlew assembleDebug assembleDebugAndroidTest
             adb shell screenrecord --time-limit 180 /sdcard/keepsheet-instruction-video.mp4 &
             RECORD_PID=$!
-            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.github.tomasbjerre.keepsheet.InstructionVideoTest || ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.github.tomasbjerre.keepsheet.InstructionVideoTest
+            # Best-effort (`|| true`): InstructionVideoTest already passed in the full run
+            # above, this second run only exists to be filmed — a flake here costs the
+            # video (the upload below only warns when it's missing), not the build.
+            ATTEMPTS_DIR=app/build/instrumented-attempts-video TEST_FILTER=com.github.tomasbjerre.keepsheet.InstructionVideoTest MAX_ATTEMPTS=2 bash scripts/run-instrumented-tests.sh || true
             # Stopped with SIGINT (not left to hit --time-limit) so screenrecord finalizes
             # the mp4 container's trailing moov atom instead of producing a file every
             # player rejects as corrupt. Sent to the *remote* screenrecord process via its
@@ -128,7 +148,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: instrumented-test-report
-          path: android/app/build/reports/androidTests/connected
+          # One report + logcat per attempt (see scripts/run-instrumented-tests.sh) — the
+          # first attempt's is what shows why a test that only passed on a retry flaked.
+          path: |
+            android/app/build/instrumented-attempts
+            android/app/build/instrumented-attempts-video
           retention-days: 3
           if-no-files-found: warn
 

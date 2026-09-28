@@ -9,7 +9,7 @@ import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -226,8 +226,8 @@ class InstructionVideoTest {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 15_000L
-        const val FINALIZE_TIMEOUT_MILLIS = 45_000L
+        const val TIMEOUT_MILLIS = 60_000L
+        const val FINALIZE_TIMEOUT_MILLIS = 120_000L
         const val PAUSE_MILLIS = 700L
         const val LONG_PAUSE_MILLIS = 1_500L
     }
