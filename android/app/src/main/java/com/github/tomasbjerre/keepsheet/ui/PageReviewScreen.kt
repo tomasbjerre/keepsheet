@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -442,7 +443,9 @@ private fun CropSection(
             "Pinch to zoom in for a closer look, drag to pan.",
             style = MaterialTheme.typography.bodySmall,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Wraps rather than overflowing: four labelled buttons don't fit in one line on a
+        // narrow (or large-font) screen, which used to push "View full size" off the edge.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = onRedetect, enabled = !detecting) { Text("Detect edges") }
             TextButton(onClick = { onCornersChange(Corners.inset()) }, enabled = !detecting && corners == null) {
                 Text("Crop manually")
