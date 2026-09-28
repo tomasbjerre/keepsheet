@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -476,10 +475,10 @@ private fun RotateControls(
     rotationDegrees: Int,
     onRotate: (Int) -> Unit,
 ) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = { onRotate(rotatedCounterClockwise(rotationDegrees)) }) { Text("Rotate left") }
         TextButton(onClick = { onRotate(rotatedClockwise(rotationDegrees)) }) { Text("Rotate right") }
@@ -506,10 +505,13 @@ private fun FilterPicker(
     onApplyToAll: () -> Unit,
 ) {
     val previews = filterPreviews(uri, rotationDegrees)
-    Row(
+    // Wraps like the other action rows (specs/ui-flows.md#3-page-review): the three chips
+    // don't fit side by side on a 320dp screen, and a squeezed chip wraps its label letter
+    // by letter.
+    FlowRow(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         PageFilter.entries.forEach { filter ->
             FilterChip(
