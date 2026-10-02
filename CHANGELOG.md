@@ -1,3 +1,10 @@
+## 0.2.2 (2026-10-01)
+
+### Dependency updates
+
+- update plugin com.diffplug.spotless to v8.10.3 (#87) ([c6dab](https://github.com/tomasbjerre/keepsheet/commit/c6dabde60ad6dd2) renovate[bot])  
+- update dependency androidx.navigation:navigation-compose to v2.10.2 (#86) ([fed15](https://github.com/tomasbjerre/keepsheet/commit/fed15eaa5abb792) renovate[bot])  
+- update dependency androidx.core:core-ktx to v1.19.1 (#85) ([9c670](https://github.com/tomasbjerre/keepsheet/commit/9c670a4f1961e3b) renovate[bot])  
 ## 0.2.1 (2026-09-28)
 
 ### Bug Fixes
