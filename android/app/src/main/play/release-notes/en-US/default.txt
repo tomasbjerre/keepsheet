@@ -1,3 +1,6 @@
-keepsheet 0.2.1
-- fix: make Page Review usable on narrow screens; keep a name being typed (#83)
-- ci: make instrumented tests robust against emulator flakiness (#81)
+keepsheet 0.2.2
+- chore(deps): update plugin com.diffplug.spotless to v8.10.3 (#87)
+- chore(deps): update dependency androidx.navigation:navigation-compose to v2.10.2 (#86)
+- chore(deps): update dependency androidx.core:core-ktx to v1.19.1 (#85)
+- chore(changelog): updating changelog
+- chore(android): update screenshots and play listing
