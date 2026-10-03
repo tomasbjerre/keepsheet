@@ -1,6 +1,7 @@
-keepsheet 0.2.2
-- chore(deps): update plugin com.diffplug.spotless to v8.10.3 (#87)
-- chore(deps): update dependency androidx.navigation:navigation-compose to v2.10.2 (#86)
-- chore(deps): update dependency androidx.core:core-ktx to v1.19.1 (#85)
+keepsheet 0.3.0
+- fix(ci): collapse sdcard cleanup retry into a single line (#92)
+- fix(ci): retry sdcard screenshot cleanup after a cold emulator boot (#91)
+- feat(android): default Page Review's filter to color (#90)
+- feat(android): add Save to device storage on Document Detail (#89)
 - chore(changelog): updating changelog
 - chore(android): update screenshots and play listing
