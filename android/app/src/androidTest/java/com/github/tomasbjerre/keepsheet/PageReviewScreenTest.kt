@@ -64,24 +64,28 @@ class PageReviewScreenTest {
     fun tearDown() = Intents.release()
 
     /** Selection is tracked per-page (by uri), not by slot — tapping a different thumbnail
-     * must show THAT page's own filter, not whatever the previously selected page had. */
+     * must show THAT page's own filter, not whatever the previously selected page had.
+     * Picks Black & white (not color, see keepsheet#84's new default) for the first page
+     * precisely because it differs from the default every page starts with, so the second
+     * page's filter staying at that default is actual evidence of per-page tracking, not a
+     * coincidence of both pages starting equal. */
     @Test
     fun selectingAPageShowsItsOwnFilterNotThePreviouslySelectedPagesFilter() {
         importTwoSamplePages()
 
-        composeRule.onNodeWithText("Color").performScrollTo().performClick()
-        composeRule.onNodeWithText("Color").assertIsSelected()
+        composeRule.onNodeWithText("Black & white").performScrollTo().performClick()
+        composeRule.onNodeWithText("Black & white").assertIsSelected()
 
         // Scrolled the thumbnail strip out of view above — scrollTo() on a LazyRow item
         // doesn't propagate to the outer Column, so scroll to a direct Column child
         // (right above the strip) to bring the whole top of the screen back into view.
         composeRule.onNodeWithText("2 page(s)").performScrollTo()
         composeRule.onAllNodesWithTag(REVIEW_THUMBNAIL_TEST_TAG)[1].performClick()
-        composeRule.onNodeWithText("Black & white").performScrollTo().assertIsSelected()
+        composeRule.onNodeWithText("Color").performScrollTo().assertIsSelected()
 
         composeRule.onNodeWithText("2 page(s)").performScrollTo()
         composeRule.onAllNodesWithTag(REVIEW_THUMBNAIL_TEST_TAG)[0].performClick()
-        composeRule.onNodeWithText("Color").performScrollTo().assertIsSelected()
+        composeRule.onNodeWithText("Black & white").performScrollTo().assertIsSelected()
     }
 
     /** See specs/ui-flows.md#3-page-review (keepsheet#67): a read-only full-screen view of
