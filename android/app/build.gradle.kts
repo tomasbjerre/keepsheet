@@ -13,7 +13,7 @@ plugins {
     id("com.google.devtools.ksp")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
-    id("se.bjurr.gradle.update-versions") version "3.0.1"
+    id("se.bjurr.gradle.update-versions") version "3.0.3"
     id("com.github.triplet.play") version "4.1.1"
 }
 
