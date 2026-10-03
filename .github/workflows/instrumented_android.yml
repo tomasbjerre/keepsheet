@@ -98,7 +98,21 @@ jobs:
             # over from whatever ScreenshotTest looked like when that snapshot was
             # taken, so a later `adb pull` doesn't silently return stale images
             # alongside the current ones.
-            adb shell rm -rf /sdcard/keepsheet-screenshots
+            #
+            # Retried: right after a cold boot (e.g. the cached snapshot being
+            # rejected as a version mismatch, as opposed to the normal snapshot
+            # restore this is written for), /sdcard's FUSE layer can still be
+            # settling even though boot_completed is already 1 — hit that window and
+            # every file in the directory fails with "Bad address" (EFAULT), failing
+            # this whole step before a single test has run. A few seconds almost
+            # always clears it; falling through after exhausting retries still beats
+            # failing the whole job over what's ultimately a best-effort cleanup (a
+            # stale leftover screenshot would get overwritten by the real one below
+            # by the same name anyway in the common case).
+            for i in 1 2 3 4 5; do
+              adb shell rm -rf /sdcard/keepsheet-screenshots && break
+              sleep 3
+            done
             # A "System UI isn't responding" dialog on a loaded emulator covers the app and
             # swallows taps — the most common reason an otherwise fine UI test times out.
             adb shell settings put global hide_error_dialogs 1
