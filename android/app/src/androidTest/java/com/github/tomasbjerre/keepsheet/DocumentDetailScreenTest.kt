@@ -1,6 +1,10 @@
 package com.github.tomasbjerre.keepsheet
 
 import android.Manifest
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -14,23 +18,32 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
+import androidx.test.espresso.intent.Intents
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import com.github.tomasbjerre.keepsheet.ui.DOCUMENT_NAME_FIELD_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertArrayEquals
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
+import java.io.File
 
 /**
  * End-to-end: scans a page, saves it, and exercises Document Detail (see
  * specs/ui-flows.md#5-document-detail) — page preview (real PdfRenderer output, not a
- * mock), rename, and delete. Share isn't exercised here since it hands off to the
- * system share sheet, outside this app's process.
+ * mock), rename, delete, and Save (keepsheet#88). Share isn't exercised here since it
+ * hands off to the system share sheet, outside this app's process — Save is, since
+ * (unlike Share) its correctness is about what ends up written to the picked
+ * destination, which this test owns and can actually inspect.
  */
 @RunWith(AndroidJUnit4::class)
 class DocumentDetailScreenTest {
@@ -39,6 +52,12 @@ class DocumentDetailScreenTest {
 
     @get:Rule
     val ruleChain: RuleChain = RuleChain.outerRule(permissionRule).around(composeRule)
+
+    @Before
+    fun setUp() = Intents.init()
+
+    @After
+    fun tearDown() = Intents.release()
 
     @Test
     fun savingADocumentOpensDetailWithARenderedPageAndSupportsRenameAndDelete() {
@@ -99,6 +118,51 @@ class DocumentDetailScreenTest {
         composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performImeAction()
         composeRule.waitUntil(timeoutMillis = TIMEOUT_MILLIS) { persistedDocumentNames().single() == "Typed by hand" }
     }
+
+    /** keepsheet#88: the picked destination — anywhere the platform's document picker can
+     * reach, including removable/SD-card storage, which this test can't actually attach, so
+     * it stands in for "a location the user chose" with a plain cache file — receives
+     * exactly the saved document's own PDF bytes, every time Save is tapped (not just once),
+     * confirming the picker is launched fresh rather than reusing a stale destination. */
+    @Test
+    fun saveWritesTheDocumentsPdfToEachChosenLocation() {
+        scanAndSaveOnePage()
+
+        stubSavePickerWith("first-save-destination.pdf")
+        composeRule.onNodeWithContentDescription("Save").performClick()
+        awaitText("Saved.")
+        assertSavedPdfMatches("first-save-destination.pdf")
+
+        stubSavePickerWith("second-save-destination.pdf")
+        composeRule.onNodeWithContentDescription("Save").performClick()
+        awaitText("Saved.")
+        assertSavedPdfMatches("second-save-destination.pdf")
+    }
+
+    private fun stubSavePickerWith(destinationFileName: String) {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val destination = File(context.cacheDir, destinationFileName)
+        val resultData = Intent().setData(Uri.fromFile(destination))
+        Intents
+            .intending(hasAction(Intent.ACTION_CREATE_DOCUMENT))
+            .respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, resultData))
+    }
+
+    private fun assertSavedPdfMatches(destinationFileName: String) {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val destination = File(context.cacheDir, destinationFileName)
+        assertArrayEquals(File(persistedPdfPath()).readBytes(), destination.readBytes())
+    }
+
+    private fun persistedPdfPath(): String =
+        runBlocking {
+            val app = composeRule.activity.application as KeepSheetApplication
+            app.repository
+                .observeDocuments()
+                .first()
+                .single()
+                .pdfPath
+        }
 
     private fun scanAndSaveOnePage() {
         composeRule.onNodeWithText("Scan").performClick()

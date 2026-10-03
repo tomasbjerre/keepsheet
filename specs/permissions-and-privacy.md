@@ -40,9 +40,9 @@
   point).
 - No document is kept indefinitely — see
   [Data Model](data-model.md#document-lifetime): everything is cleared on
-  the next fresh app start, and sharing (exporting) a document is the
-  only way to keep a copy beyond that, at a destination of the user's own
-  choosing. The chosen
+  the next fresh app start, and sharing or saving (exporting) a document
+  is the only way to keep a copy beyond that, at a destination of the
+  user's own choosing. The chosen
   [page size](capture-and-processing.md#printer-friendly-pages) is the
   one exception — a UI preference holding no document content, so it's
   kept across a fresh start rather than cleared with everything else.

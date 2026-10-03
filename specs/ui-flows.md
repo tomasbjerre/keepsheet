@@ -136,7 +136,10 @@ A saved document — scanned, imported, or merged.
   what the user typed is what gets saved.
 - Summary info: date, page count, file size.
 - **Back**, **Share** (hands the PDF to the platform's share sheet),
-  and **Delete** controls.
+  **Save** (writes the PDF directly to a location the user picks via the
+  platform's document picker — e.g. removable/SD-card storage — every
+  time it's used, rather than remembering or defaulting to one), and
+  **Delete** controls.
 - Delete has a confirmation step before it actually deletes.
 
 ## Feedback and support
