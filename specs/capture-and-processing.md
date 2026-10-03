@@ -93,9 +93,11 @@ others in the same document:
   content, where grayscale reads better.
 
 The filter is chosen per page, defaulting to the last filter used in the
-current capture session (or black-and-white for the first page of a new
-one — the most common case, a text document), and can be changed at any
-time before finalizing (see [UI Flows](ui-flows.md#3-page-review)).
+current capture session (or color for the first page of a new one — it's
+the only one of the three that can't lose content, since grayscale and
+black-and-white both discard information a page might actually need),
+and can be changed at any time before finalizing (see
+[UI Flows](ui-flows.md#3-page-review)).
 
 Grayscale and black-and-white read as similar options, but can produce very
 different results depending on what's on the page — grayscale keeps

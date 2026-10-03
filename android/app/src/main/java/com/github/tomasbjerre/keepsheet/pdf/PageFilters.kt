@@ -29,9 +29,9 @@ fun applyFilter(
 
 /**
  * The filter a page starts with: the last one used in the current capture session, or
- * black-and-white for the first page of a new one.
+ * color for the first page of a new one (keepsheet#84).
  */
-fun defaultFilter(lastUsed: PageFilter?): PageFilter = lastUsed ?: PageFilter.BLACK_AND_WHITE
+fun defaultFilter(lastUsed: PageFilter?): PageFilter = lastUsed ?: PageFilter.COLOR
 
 private const val BLACK = 0xFF000000.toInt()
 private const val WHITE = 0xFFFFFFFF.toInt()

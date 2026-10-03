@@ -98,8 +98,8 @@ class PageFiltersTest {
     }
 
     @Test
-    fun `first page defaults to black and white, later pages to the last used filter`() {
-        assertThat(defaultFilter(null)).isEqualTo(PageFilter.BLACK_AND_WHITE)
+    fun `first page defaults to color, later pages to the last used filter`() {
+        assertThat(defaultFilter(null)).isEqualTo(PageFilter.COLOR)
         assertThat(defaultFilter(PageFilter.GRAYSCALE)).isEqualTo(PageFilter.GRAYSCALE)
     }
 }
