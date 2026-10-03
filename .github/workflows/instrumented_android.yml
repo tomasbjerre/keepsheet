@@ -109,10 +109,13 @@ jobs:
             # failing the whole job over what's ultimately a best-effort cleanup (a
             # stale leftover screenshot would get overwritten by the real one below
             # by the same name anyway in the common case).
-            for i in 1 2 3 4 5; do
-              adb shell rm -rf /sdcard/keepsheet-screenshots && break
-              sleep 3
-            done
+            #
+            # One line, not a multi-line for loop: android-emulator-runner's `script`
+            # runs each line of this block as its own separate `sh -c` invocation, not
+            # as one continuous script — a loop split across lines breaks with
+            # "Syntax error: end of file unexpected (expecting \"done\")" on its first
+            # line alone.
+            for i in 1 2 3 4 5; do adb shell rm -rf /sdcard/keepsheet-screenshots && break; sleep 3; done
             # A "System UI isn't responding" dialog on a loaded emulator covers the app and
             # swallows taps — the most common reason an otherwise fine UI test times out.
             adb shell settings put global hide_error_dialogs 1
