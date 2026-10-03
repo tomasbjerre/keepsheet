@@ -7,8 +7,8 @@ your device — no accounts, no cloud.
 KeepSheet doesn't keep a permanent archive: your documents are there for
 as long as you keep using the app (switching to other apps and back in
 the meantime is fine), and are cleared the next time you open it after
-fully closing it. **Share** whatever you want to keep, to wherever you
-choose, before then.
+fully closing it. **Share** or **Save** whatever you want to keep, to
+wherever you choose, before then.
 
 _This manual will grow screenshots as each screen is implemented — see
 [`specs/ui-flows.md`](../specs/ui-flows.md) for the authoritative
@@ -80,8 +80,10 @@ combined in. Tap **Merge** to produce the combined PDF.
 Opened by tapping any document, or automatically once you save a new one.
 Shows a preview of the PDF's pages, its name (tap to edit, any time), and
 its date, page count, and size. **Share** hands the PDF to any app you
-choose (Drive, email, messaging, printing, …); **Delete** removes it, with
-a confirmation step first.
+choose (Drive, email, messaging, printing, …); **Save** writes it directly
+to a location you pick — including removable/SD-card storage — asking
+you to choose again every time, rather than reusing a previous location;
+**Delete** removes it, with a confirmation step first.
 
 ## Feedback and support
 

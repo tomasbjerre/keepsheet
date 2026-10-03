@@ -3,6 +3,9 @@ package com.github.tomasbjerre.keepsheet.ui
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,6 +29,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -50,10 +56,12 @@ import com.github.tomasbjerre.keepsheet.data.Document
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import com.github.tomasbjerre.keepsheet.data.renameDocument
 import com.github.tomasbjerre.keepsheet.pdf.renderPdfPageThumbnails
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 
 /**
  * See specs/ui-flows.md#5-document-detail. Reached from Home's document rows and, once a
@@ -71,6 +79,8 @@ fun DocumentDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     val document by repository.observeDocument(documentId).collectAsState(initial = null)
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val saveToStorage = rememberSaveToStorage(context, coroutineScope, snackbarHostState)
 
     // The Flow emits null both before its first load and after the document is deleted
     // (e.g. from Home, once that has its own delete action) — only the latter should
@@ -92,9 +102,11 @@ fun DocumentDetailScreen(
             DocumentDetailTopBar(
                 onBack = onBack,
                 onShare = document?.let { doc -> { coroutineScope.launch { shareDocument(context, doc) } } },
+                onSave = document?.let { doc -> { saveToStorage(doc) } },
                 onDelete = document?.let { { showDeleteConfirm = true } },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         val currentDocument = document
         if (currentDocument == null) {
@@ -131,6 +143,7 @@ fun DocumentDetailScreen(
 private fun DocumentDetailTopBar(
     onBack: () -> Unit,
     onShare: (() -> Unit)?,
+    onSave: (() -> Unit)?,
     onDelete: (() -> Unit)?,
 ) {
     TopAppBar(
@@ -144,11 +157,50 @@ private fun DocumentDetailTopBar(
             IconButton(onClick = onShare ?: {}, enabled = onShare != null) {
                 Icon(Icons.Default.Share, contentDescription = "Share")
             }
+            IconButton(onClick = onSave ?: {}, enabled = onSave != null) {
+                Icon(Icons.Default.Save, contentDescription = "Save")
+            }
             IconButton(onClick = onDelete ?: {}, enabled = onDelete != null) {
                 Icon(Icons.Default.Delete, contentDescription = "Delete")
             }
         },
     )
+}
+
+/**
+ * Sets up the SAF "Save" picker (see specs/ui-flows.md#5-document-detail) and returns a
+ * function that launches it for a given document, suggesting its current name as the
+ * filename. The picked [Uri] only comes back through [rememberLauncherForActivityResult]'s
+ * callback, by which point `document` (DocumentDetailScreen's own observed state) may have
+ * moved on to a rename or a different document entirely — so which document to write is
+ * captured here, at launch time, rather than re-read from there.
+ */
+@Composable
+private fun rememberSaveToStorage(
+    context: Context,
+    coroutineScope: CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+): (Document) -> Unit {
+    var documentPendingSave by remember { mutableStateOf<Document?>(null) }
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+            val doc = documentPendingSave
+            if (uri != null && doc != null) {
+                coroutineScope.launch {
+                    val message =
+                        runCatching { saveDocumentToUri(context, doc, uri) }
+                            .fold(
+                                onSuccess = { "Saved." },
+                                onFailure = { "Couldn't save — try again." },
+                            )
+                    snackbarHostState.showSnackbar(message)
+                }
+            }
+        }
+    return { doc ->
+        documentPendingSave = doc
+        launcher.launch("${doc.name}.pdf")
+    }
 }
 
 @Composable
@@ -300,4 +352,24 @@ private suspend fun shareDocument(
     // See the same withContext(Dispatchers.Main) note on Save/Delete above — explicit
     // rather than relying on the withContext(Dispatchers.IO) above to hand back correctly.
     withContext(Dispatchers.Main) { context.startActivity(Intent.createChooser(intent, null)) }
+}
+
+/**
+ * Writes the PDF to [uri] — a location the user picked via the platform's document picker
+ * (see specs/ui-flows.md#5-document-detail's Save) — rather than handing it to another app
+ * like [shareDocument] does. [uri] may be on removable/SD-card storage, so this always goes
+ * through [android.content.ContentResolver] rather than java.io.File, the only API that
+ * resolves such a destination correctly.
+ */
+private suspend fun saveDocumentToUri(
+    context: Context,
+    document: Document,
+    uri: Uri,
+) {
+    withContext(Dispatchers.IO) {
+        val output =
+            context.contentResolver.openOutputStream(uri)
+                ?: throw IOException("contentResolver couldn't open an output stream for $uri")
+        output.use { File(document.pdfPath).inputStream().use { input -> input.copyTo(it) } }
+    }
 }
