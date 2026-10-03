@@ -1,3 +1,15 @@
+## 0.3.0 (2026-10-03)
+
+### Features
+
+-  **android**  default Page Review's filter to color (#90) ([fbece](https://github.com/tomasbjerre/keepsheet/commit/fbece27c23d3080) Tomas Bjerre)  
+-  **android**  add Save to device storage on Document Detail (#89) ([b2e42](https://github.com/tomasbjerre/keepsheet/commit/b2e4209c8bc6260) Tomas Bjerre)  
+
+### Bug Fixes
+
+-  **ci**  collapse sdcard cleanup retry into a single line (#92) ([5b25b](https://github.com/tomasbjerre/keepsheet/commit/5b25b8b4555360c) Tomas Bjerre)  
+-  **ci**  retry sdcard screenshot cleanup after a cold emulator boot (#91) ([a7b25](https://github.com/tomasbjerre/keepsheet/commit/a7b255becd7e281) Tomas Bjerre)  
+
 ## 0.2.2 (2026-10-01)
 
 ### Dependency updates
