@@ -205,7 +205,13 @@ private fun rememberDocumentNameEditing(
             nameEdited = true
         },
         commit = {
-            if (documentName != null && nameInput != documentName) {
+            // Guarded on nameEdited, not just nameInput != documentName: this also fires on
+            // the field's very first (unfocused) focus-state callback, before the user has
+            // touched anything — nameInput is still catching up to documentName asynchronously
+            // at that point (see the LaunchedEffect above), so without this guard that spurious
+            // call could commit a same-name "rename" and permanently mark the document as
+            // user-named, blocking every future OCR-suggested rename (specs/file-naming.md#rules).
+            if (nameEdited && documentName != null && nameInput != documentName) {
                 coroutineScope.launch { renameDocument(repository, documentId, nameInput) }
             }
             nameEdited = false
