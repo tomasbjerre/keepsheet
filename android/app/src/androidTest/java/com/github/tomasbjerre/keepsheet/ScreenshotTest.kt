@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -72,6 +73,17 @@ class ScreenshotTest {
 
         awaitShutterEnabled()
         composeRule.onNodeWithContentDescription("Shutter").performClick()
+        awaitTagCount(THUMBNAIL_TEST_TAG, 1)
+        // Not a numbered Play listing slot — documents the thumbnail strip's per-page
+        // numbering (specs/capture-and-processing.md#multi-page-capture, keepsheet#94) with
+        // more than one page, which a single-page capture can't show.
+        composeRule.onNodeWithContentDescription("Shutter").performClick()
+        awaitTagCount(THUMBNAIL_TEST_TAG, 2)
+        screenshot("capture-multiple-pages")
+        // Back to one page — every screenshot from here on (Document Detail's single page
+        // preview, etc.) assumes the single-page session the rest of this flow has always
+        // captured; the second shutter press above was only to show numbering with >1 page.
+        composeRule.onAllNodesWithContentDescription("Remove page")[1].performClick()
         awaitTagCount(THUMBNAIL_TEST_TAG, 1)
         composeRule.onNodeWithText("Done").performClick()
         awaitEnabled("Save")

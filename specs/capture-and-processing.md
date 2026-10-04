@@ -10,7 +10,11 @@ photo:
 - Starting a capture session opens the camera and lets the user take a
   shot, see it added to a running list of captured pages (shown as a
   thumbnail strip), and immediately take the next one — no per-page
-  "save" or "next" round trip back to a list screen.
+  "save" or "next" round trip back to a list screen. The strip
+  auto-scrolls to the newest thumbnail and numbers every thumbnail with
+  its position, so losing track of which page was just captured — easy
+  to do with several physical pages in front of the user — doesn't
+  require scrolling back to check.
 - Capture is camera-only — it has no Import action of its own (see
   [UI Flows](ui-flows.md#2-capture)). Importing existing photos instead of
   using the camera is Home's separate Import flow, which produces its own
