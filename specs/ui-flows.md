@@ -41,7 +41,10 @@ Entered by tapping Scan on Home.
 - A shutter action that captures a page, runs
   [automatic cropping and straightening](capture-and-processing.md#automatic-cropping-and-straightening),
   and adds it to a thumbnail strip of the pages captured so far in this
-  session.
+  session. The strip auto-scrolls to keep the just-captured page in view,
+  and numbers each thumbnail with its position, so it stays obvious which
+  page was added last even once there are more pages than fit on screen
+  at once.
 - Deliberately minimal: the thumbnail strip only supports removing a page,
   nothing else — no reordering or retaking here (reorder is Page Review's
   job) — see

@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -441,14 +442,22 @@ private fun CaptureThumbnailStrip(
         return
     }
 
+    // See specs/capture-and-processing.md#multi-page-capture (keepsheet#94): keeps the
+    // just-captured page in view rather than leaving it off the edge of a strip that no
+    // longer fits on screen, the same way a newly removed page's neighbors should stay
+    // reachable without a manual scroll back.
+    val listState = rememberLazyListState()
+    LaunchedEffect(pages.size) {
+        if (pages.isNotEmpty()) listState.animateScrollToItem(pages.lastIndex)
+    }
+
     LazyRow(
+        state = listState,
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(THUMBNAIL_SPACING),
     ) {
-        itemsIndexed(pages, key = { _, page -> page.id }) { _, page ->
-            Box(modifier = Modifier.size(THUMBNAIL_SIZE).testTag(THUMBNAIL_TEST_TAG)) {
-                CaptureThumbnail(page = page, onRemove = { onRemove(page.id) })
-            }
+        itemsIndexed(pages, key = { _, page -> page.id }) { index, page ->
+            CaptureThumbnail(page = page, position = index + 1, onRemove = { onRemove(page.id) })
         }
     }
 }
@@ -456,16 +465,20 @@ private fun CaptureThumbnailStrip(
 @Composable
 private fun CaptureThumbnail(
     page: CapturedPage,
+    position: Int,
     onRemove: () -> Unit,
 ) {
-    Box(modifier = Modifier.size(THUMBNAIL_SIZE)) {
-        AsyncImage(model = page.uri, contentDescription = null, modifier = Modifier.fillMaxSize())
-        IconButton(
-            onClick = onRemove,
-            modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.4f)),
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Remove page", tint = Color.White)
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(modifier = Modifier.size(THUMBNAIL_SIZE).testTag(THUMBNAIL_TEST_TAG)) {
+            AsyncImage(model = page.uri, contentDescription = null, modifier = Modifier.fillMaxSize())
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.4f)),
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Remove page", tint = Color.White)
+            }
         }
+        Text(position.toString(), style = MaterialTheme.typography.labelSmall)
     }
 }
 

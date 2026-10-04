@@ -58,6 +58,23 @@ class CaptureScreenTest {
         awaitThumbnailCount(2)
     }
 
+    /** See specs/capture-and-processing.md#multi-page-capture (keepsheet#94): each
+     * thumbnail is labelled with its position, so it's clear which one was just added even
+     * once there are more pages than fit on screen — not exercised here, since forcing a
+     * real overflow would mean several more real camera captures on top of the two this
+     * already takes. */
+    @Test
+    fun thumbnailsAreNumberedByPosition() {
+        composeRule.onNodeWithText("Scan").performClick()
+        capturePage()
+        composeRule.onNodeWithText("1").assertExists()
+
+        composeRule.onNodeWithContentDescription("Shutter").performClick()
+        awaitThumbnailCount(2)
+        composeRule.onNodeWithText("1").assertExists()
+        composeRule.onNodeWithText("2").assertExists()
+    }
+
     @Test
     fun removingThePageDisablesDoneAgain() {
         composeRule.onNodeWithText("Scan").performClick()
