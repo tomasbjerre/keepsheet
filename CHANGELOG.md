@@ -1,3 +1,11 @@
+## 0.4.1 (2026-10-04)
+
+### Bug Fixes
+
+-  **android**  don't mark a document user-named on its first unfocused render (#103) ([3dcb8](https://github.com/tomasbjerre/keepsheet/commit/3dcb8280499bddc) Tomas Bjerre)  
+-  **renovate**  update extends path after org config rename ([39d88](https://github.com/tomasbjerre/keepsheet/commit/39d88994770941a) Tomas Bjerre)  
+-  **renovate**  point extends at tomasbjerre/.github ([1dda5](https://github.com/tomasbjerre/keepsheet/commit/1dda51c231b103b) Tomas Bjerre)  
+
 ## 0.3.0 (2026-10-03)
 
 ### Features
