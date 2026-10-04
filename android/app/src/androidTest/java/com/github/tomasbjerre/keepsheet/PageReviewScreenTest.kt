@@ -7,10 +7,12 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.SystemClock
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -172,6 +174,22 @@ class PageReviewScreenTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
+    }
+
+    /** See specs/ui-flows.md#3-page-review (keepsheet#93): a per-page remove action, same
+     * as reorder above it. Removing the first of two pages must drop it from the thumbnail
+     * strip and the page count, leaving only the second. */
+    @Test
+    fun removingAPageDropsItFromTheReviewAndThePageCount() {
+        importTwoSamplePages()
+
+        composeRule.onAllNodesWithTag(REVIEW_THUMBNAIL_TEST_TAG).assertCountEquals(2)
+        composeRule.onNodeWithText("2 page(s)").assertExists()
+
+        composeRule.onAllNodesWithContentDescription("Remove page")[0].performScrollTo().performClick()
+
+        composeRule.onNodeWithText("1 page(s)").assertExists()
+        composeRule.onAllNodesWithTag(REVIEW_THUMBNAIL_TEST_TAG).assertCountEquals(1)
     }
 
     /** See specs/capture-and-processing.md#printer-friendly-pages (keepsheet#72): the page

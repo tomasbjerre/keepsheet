@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -24,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -49,6 +51,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -89,7 +92,7 @@ import kotlin.math.roundToInt
  * ever reaches this screen).
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongMethod") // Compose screen: state hoisting keeps this one flat function readable.
+@Suppress("LongMethod", "CyclomaticComplexMethod") // Compose screen: hoisted state keeps this flat and readable.
 @Composable
 fun PageReviewScreen(
     pages: List<Uri>,
@@ -130,6 +133,17 @@ fun PageReviewScreen(
         filters = filters.moved(fromIndex, toIndex)
         corners = corners.moved(fromIndex, toIndex)
         rotations = rotations.moved(fromIndex, toIndex)
+    }
+
+    // See specs/ui-flows.md#3-page-review: a per-page remove action, same as reorder above
+    // keeps filters/corners/rotations index-aligned with pageOrder. Doesn't touch
+    // selectedUri — if the removed page was the selected one, `selected`'s own derivation
+    // (above) already falls back to index 0 once its uri is no longer in pageOrder.
+    fun remove(index: Int) {
+        pageOrder = pageOrder.toMutableList().also { it.removeAt(index) }
+        filters = filters.toMutableList().also { it.removeAt(index) }
+        corners = corners.toMutableList().also { it.removeAt(index) }
+        rotations = rotations.toMutableList().also { it.removeAt(index) }
     }
 
     Scaffold(
@@ -187,6 +201,7 @@ fun PageReviewScreen(
                 selected = selected,
                 onSelect = { index -> selectedUri = pageOrder[index] },
                 onReorder = ::reorder,
+                onRemove = ::remove,
             )
             if (pageOrder.isNotEmpty()) {
                 CropSection(
@@ -283,7 +298,8 @@ const val REVIEW_THUMBNAIL_TEST_TAG = "review-thumbnail"
 /**
  * See specs/ui-flows.md#3-page-review: reorder (drag), same interaction as Capture's own
  * thumbnail strip (long-press then drag, so a plain tap still selects a page for the crop/
- * filter controls below).
+ * filter controls below), and remove (same "Remove page" close-button overlay as Capture's
+ * own thumbnail strip, see CaptureScreen's CaptureThumbnail).
  */
 @Composable
 private fun PageThumbnails(
@@ -291,6 +307,7 @@ private fun PageThumbnails(
     selected: Int,
     onSelect: (Int) -> Unit,
     onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
+    onRemove: (Int) -> Unit,
 ) {
     val density = LocalDensity.current
     val itemExtentPx = with(density) { (REVIEW_THUMBNAIL_SIZE + REVIEW_THUMBNAIL_SPACING).toPx() }
@@ -302,52 +319,97 @@ private fun PageThumbnails(
         horizontalArrangement = Arrangement.spacedBy(REVIEW_THUMBNAIL_SPACING),
     ) {
         itemsIndexed(pages, key = { _, uri -> uri }) { index, uri ->
-            val isDragging = uri == draggingUri
-            AsyncImage(
-                model = uri,
-                contentDescription = "Page ${index + 1}",
-                modifier =
-                    Modifier
-                        .size(REVIEW_THUMBNAIL_SIZE)
-                        .testTag(REVIEW_THUMBNAIL_TEST_TAG)
-                        .graphicsLayer { translationX = if (isDragging) dragOffsetPx else 0f }
-                        .zIndex(if (isDragging) 1f else 0f)
-                        .border(if (index == selected) 3.dp else 0.dp, MaterialTheme.colorScheme.primary)
-                        // Ahead of .clickable below so this drag detector sees (and, once a
-                        // drag actually starts, consumes) touch events first — otherwise
-                        // clickable's own gesture recognizer claims them and a long-press
-                        // drag never starts.
-                        .pointerInput(uri, pages) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = {
-                                    draggingUri = uri
-                                    dragOffsetPx = 0f
-                                },
-                                onDragEnd = {
-                                    draggingUri = null
-                                    dragOffsetPx = 0f
-                                },
-                                onDragCancel = {
-                                    draggingUri = null
-                                    dragOffsetPx = 0f
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    val currentIndex = pages.indexOf(uri)
-                                    val result =
-                                        computeReviewDrag(
-                                            dragAmount.x,
-                                            dragOffsetPx,
-                                            currentIndex,
-                                            pages.size,
-                                            itemExtentPx,
-                                        )
-                                    dragOffsetPx = result.offsetPx
-                                    result.targetIndex?.let { onReorder(currentIndex, it) }
-                                },
-                            )
-                        }.clickable { onSelect(index) },
+            PageThumbnailItem(
+                index = index,
+                uri = uri,
+                pages = pages,
+                selected = selected,
+                drag =
+                    ThumbnailDrag(
+                        isDragging = uri == draggingUri,
+                        offsetPx = dragOffsetPx,
+                        itemExtentPx = itemExtentPx,
+                    ),
+                onDragStateChange = { dragging, offsetPx ->
+                    draggingUri = dragging
+                    dragOffsetPx = offsetPx
+                },
+                onSelect = onSelect,
+                onReorder = onReorder,
+                onRemove = onRemove,
             )
+        }
+    }
+}
+
+/** A thumbnail's drag-to-reorder state — grouped into one parameter so
+ * [PageThumbnailItem] doesn't need three separate ones for it. */
+private data class ThumbnailDrag(
+    val isDragging: Boolean,
+    val offsetPx: Float,
+    val itemExtentPx: Float,
+)
+
+/** One thumbnail in [PageThumbnails]: the image itself (selectable, drag-to-reorder) plus
+ * its "Remove page" overlay button (same look as Capture's own CaptureThumbnail). */
+@Composable
+private fun PageThumbnailItem(
+    index: Int,
+    uri: Uri,
+    pages: List<Uri>,
+    selected: Int,
+    drag: ThumbnailDrag,
+    onDragStateChange: (draggingUri: Uri?, offsetPx: Float) -> Unit,
+    onSelect: (Int) -> Unit,
+    onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
+    onRemove: (Int) -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .size(REVIEW_THUMBNAIL_SIZE)
+                .graphicsLayer { translationX = if (drag.isDragging) drag.offsetPx else 0f }
+                .zIndex(if (drag.isDragging) 1f else 0f),
+    ) {
+        AsyncImage(
+            model = uri,
+            contentDescription = "Page ${index + 1}",
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .testTag(REVIEW_THUMBNAIL_TEST_TAG)
+                    .border(if (index == selected) 3.dp else 0.dp, MaterialTheme.colorScheme.primary)
+                    // Ahead of .clickable below so this drag detector sees (and, once a
+                    // drag actually starts, consumes) touch events first — otherwise
+                    // clickable's own gesture recognizer claims them and a long-press
+                    // drag never starts.
+                    .pointerInput(uri, pages) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = { onDragStateChange(uri, 0f) },
+                            onDragEnd = { onDragStateChange(null, 0f) },
+                            onDragCancel = { onDragStateChange(null, 0f) },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                val currentIndex = pages.indexOf(uri)
+                                val result =
+                                    computeReviewDrag(
+                                        dragAmount.x,
+                                        drag.offsetPx,
+                                        currentIndex,
+                                        pages.size,
+                                        drag.itemExtentPx,
+                                    )
+                                onDragStateChange(uri, result.offsetPx)
+                                result.targetIndex?.let { onReorder(currentIndex, it) }
+                            },
+                        )
+                    }.clickable { onSelect(index) },
+        )
+        IconButton(
+            onClick = { onRemove(index) },
+            modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.4f)),
+        ) {
+            Icon(Icons.Default.Close, contentDescription = "Remove page", tint = Color.White)
         }
     }
 }
