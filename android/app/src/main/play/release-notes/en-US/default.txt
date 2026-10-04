@@ -1,7 +1,4 @@
-keepsheet 0.3.0
-- fix(ci): collapse sdcard cleanup retry into a single line (#92)
-- fix(ci): retry sdcard screenshot cleanup after a cold emulator boot (#91)
-- feat(android): default Page Review's filter to color (#90)
-- feat(android): add Save to device storage on Document Detail (#89)
-- chore(changelog): updating changelog
-- chore(android): update screenshots and play listing
+keepsheet 0.4.1
+- fix(android): don't mark a document user-named on its first unfocused render (#103)
+- fix(renovate): update extends path after org config rename
+- fix(renovate): point extends at tomasbjerre/.github
