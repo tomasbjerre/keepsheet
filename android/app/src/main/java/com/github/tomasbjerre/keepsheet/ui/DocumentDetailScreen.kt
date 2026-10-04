@@ -55,6 +55,7 @@ import androidx.core.content.FileProvider
 import com.github.tomasbjerre.keepsheet.data.Document
 import com.github.tomasbjerre.keepsheet.data.DocumentRepository
 import com.github.tomasbjerre.keepsheet.data.renameDocument
+import com.github.tomasbjerre.keepsheet.naming.sanitizeForFileName
 import com.github.tomasbjerre.keepsheet.pdf.renderPdfPageThumbnails
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -81,6 +82,7 @@ fun DocumentDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val saveToStorage = rememberSaveToStorage(context, coroutineScope, snackbarHostState)
+    val nameEditing = rememberDocumentNameEditing(documentId, document?.name, repository, coroutineScope)
 
     // The Flow emits null both before its first load and after the document is deleted
     // (e.g. from Home, once that has its own delete action) — only the latter should
@@ -102,7 +104,7 @@ fun DocumentDetailScreen(
             DocumentDetailTopBar(
                 onBack = onBack,
                 onShare = document?.let { doc -> { coroutineScope.launch { shareDocument(context, doc) } } },
-                onSave = document?.let { doc -> { saveToStorage(doc) } },
+                onSave = document?.let { doc -> { saveCurrentlyNamedDocument(nameEditing, saveToStorage, doc) } },
                 onDelete = document?.let { { showDeleteConfirm = true } },
             )
         },
@@ -114,7 +116,9 @@ fun DocumentDetailScreen(
         } else {
             DocumentDetailBody(
                 document = currentDocument,
-                repository = repository,
+                nameInput = nameEditing.nameInput,
+                onNameInputChange = nameEditing.onNameInputChange,
+                onCommitNameEdit = nameEditing.commit,
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
         }
@@ -167,6 +171,63 @@ private fun DocumentDetailTopBar(
     )
 }
 
+/** [nameInput] mirrors DocumentNameField's own text — not yet [commit]ted to the database,
+ * which happens asynchronously, so it's the only reliable source for "the name as the user
+ * currently sees it" (e.g. for Save-to-storage's suggested filename, which a stale
+ * `document.name` used to get wrong right after an edit — keepsheet#97). */
+private class DocumentNameEditing(
+    val nameInput: String,
+    val onNameInputChange: (String) -> Unit,
+    val commit: () -> Unit,
+)
+
+/**
+ * See [DocumentNameEditing]. A suggested name arriving from elsewhere (OCR, see
+ * specs/file-naming.md) follows into [DocumentNameEditing.nameInput] unless the user is
+ * mid-edit — the user's own name wins, and a suggestion never overwrites it anyway.
+ */
+@Composable
+private fun rememberDocumentNameEditing(
+    documentId: Long,
+    documentName: String?,
+    repository: DocumentRepository,
+    coroutineScope: CoroutineScope,
+): DocumentNameEditing {
+    var nameInput by remember(documentId) { mutableStateOf("") }
+    var nameEdited by remember(documentId) { mutableStateOf(false) }
+    LaunchedEffect(documentName) {
+        if (documentName != null && !nameEdited) nameInput = documentName
+    }
+    return DocumentNameEditing(
+        nameInput = nameInput,
+        onNameInputChange = {
+            nameInput = it
+            nameEdited = true
+        },
+        commit = {
+            if (documentName != null && nameInput != documentName) {
+                coroutineScope.launch { renameDocument(repository, documentId, nameInput) }
+            }
+            nameEdited = false
+        },
+    )
+}
+
+/**
+ * Suggests [nameEditing]'s live text — sanitized, falling back to [document]'s own name if
+ * that sanitizes away to nothing — as the filename, after committing it as a rename too
+ * (see [DocumentNameEditing]). Used by Save-to-storage's button (keepsheet#97).
+ */
+private fun saveCurrentlyNamedDocument(
+    nameEditing: DocumentNameEditing,
+    saveToStorage: (Document) -> Unit,
+    document: Document,
+) {
+    nameEditing.commit()
+    val sanitized = sanitizeForFileName(nameEditing.nameInput)
+    saveToStorage(if (sanitized.isNotBlank()) document.copy(name = sanitized) else document)
+}
+
 /**
  * Sets up the SAF "Save" picker (see specs/ui-flows.md#5-document-detail) and returns a
  * function that launches it for a given document, suggesting its current name as the
@@ -213,11 +274,17 @@ private fun LoadingIndicator(modifier: Modifier = Modifier) {
 @Composable
 private fun DocumentDetailBody(
     document: Document,
-    repository: DocumentRepository,
+    nameInput: String,
+    onNameInputChange: (String) -> Unit,
+    onCommitNameEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(16.dp)) {
-        DocumentNameField(document = document, repository = repository)
+        DocumentNameField(
+            nameInput = nameInput,
+            onNameInputChange = onNameInputChange,
+            onCommitNameEdit = onCommitNameEdit,
+        )
         Text(
             "${formatDate(document.createdAt)} · ${document.pageCount} pages · ${formatFileSize(document.sizeBytes)}",
             style = MaterialTheme.typography.bodyMedium,
@@ -230,44 +297,22 @@ private fun DocumentDetailBody(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DocumentNameField(
-    document: Document,
-    repository: DocumentRepository,
+    nameInput: String,
+    onNameInputChange: (String) -> Unit,
+    onCommitNameEdit: () -> Unit,
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    var nameInput by remember(document.id) { mutableStateOf(document.name) }
-    // True from the first keystroke until the rename is committed. While it is, a name arriving
-    // from elsewhere (the OCR-suggested one, see specs/file-naming.md) must not replace what is
-    // being typed — the user's own name wins, and a suggestion never overwrites it anyway.
-    var edited by remember(document.id) { mutableStateOf(false) }
-
-    // Follows the stored name — including a rename landing from elsewhere, and this field's own
-    // rename coming back (possibly de-duplicated) — unless the user is mid-edit.
-    LaunchedEffect(document.name) {
-        if (!edited) nameInput = document.name
-    }
-
-    fun save() {
-        if (nameInput != document.name) {
-            coroutineScope.launch { renameDocument(repository, document.id, nameInput) }
-        }
-        edited = false
-    }
-
     TextField(
         value = nameInput,
-        onValueChange = {
-            nameInput = it
-            edited = true
-        },
+        onValueChange = onNameInputChange,
         modifier =
             Modifier
                 .fillMaxWidth()
                 .testTag(DOCUMENT_NAME_FIELD_TEST_TAG)
-                .onFocusChanged { if (!it.isFocused) save() },
+                .onFocusChanged { if (!it.isFocused) onCommitNameEdit() },
         singleLine = true,
         textStyle = MaterialTheme.typography.titleLarge,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { save() }),
+        keyboardActions = KeyboardActions(onDone = { onCommitNameEdit() }),
     )
 }
 
