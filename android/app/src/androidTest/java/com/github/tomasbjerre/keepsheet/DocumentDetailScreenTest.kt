@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -28,6 +29,7 @@ import com.github.tomasbjerre.keepsheet.ui.PAGE_PREVIEW_TEST_TAG
 import com.github.tomasbjerre.keepsheet.ui.THUMBNAIL_TEST_TAG
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Before
@@ -137,6 +139,26 @@ class DocumentDetailScreenTest {
         composeRule.onNodeWithContentDescription("Save").performClick()
         awaitText("Saved.")
         assertSavedPdfMatches("second-save-destination.pdf")
+    }
+
+    /** keepsheet#97: a name typed into the field but not yet committed — that commit is
+     * asynchronous — must still be what Save suggests as the filename, not the stale
+     * `document.name` from before the edit. Tapping Save directly, with no intervening
+     * IME-Done/blur, is exactly the sequence that used to race the commit and lose. */
+    @Test
+    fun saveSuggestsTheNameCurrentlyInTheFieldEvenWhenNotYetCommitted() {
+        scanAndSaveOnePage()
+
+        stubSavePickerWith("wherever-the-user-picks.pdf")
+        composeRule.onNodeWithTag(DOCUMENT_NAME_FIELD_TEST_TAG).performTextReplacement("Brand New Name")
+        composeRule.onNodeWithContentDescription("Save").performClick()
+
+        Intents.intended(
+            allOf(
+                hasAction(Intent.ACTION_CREATE_DOCUMENT),
+                hasExtra(Intent.EXTRA_TITLE, "Brand New Name.pdf"),
+            ),
+        )
     }
 
     private fun stubSavePickerWith(destinationFileName: String) {
