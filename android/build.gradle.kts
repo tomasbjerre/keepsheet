@@ -18,7 +18,7 @@ plugins {
     id("com.google.devtools.ksp") version "2.3.12" apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0" apply false
-    id("com.diffplug.spotless") version "8.10.3"
+    id("com.diffplug.spotless") version "8.10.4"
     id("se.bjurr.violations.violations-gradle-plugin") version "4.5.1"
     id("se.bjurr.gradle.update-versions") version "3.0.3"
 }
