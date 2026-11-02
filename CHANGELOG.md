@@ -1,3 +1,12 @@
+## 0.4.2 (2026-10-20)
+
+### Dependency updates
+
+- update dependency gradle to v9.8.2 (#108) ([5e6c1](https://github.com/tomasbjerre/keepsheet/commit/5e6c1affaf9321f) renovate[bot])  
+- update plugin com.diffplug.spotless to v8.10.4 (#107) ([63928](https://github.com/tomasbjerre/keepsheet/commit/6392841bc356eff) renovate[bot])  
+- update plugin org.jetbrains.kotlin.android to v2.4.21 (#105) ([8042d](https://github.com/tomasbjerre/keepsheet/commit/8042d2b02e6f5aa) renovate[bot])  
+- update plugin org.jetbrains.kotlin.plugin.compose to v2.4.21 (#106) ([0601e](https://github.com/tomasbjerre/keepsheet/commit/0601ec34ea7e9b6) renovate[bot])  
+- update dependency gradle to v9.8.1 (#104) ([976f9](https://github.com/tomasbjerre/keepsheet/commit/976f9564b6e676a) renovate[bot])  
 ## 0.4.1 (2026-10-04)
 
 ### Bug Fixes
