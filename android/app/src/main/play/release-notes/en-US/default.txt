@@ -1,4 +1,9 @@
-keepsheet 0.4.1
-- fix(android): don't mark a document user-named on its first unfocused render (#103)
-- fix(renovate): update extends path after org config rename
-- fix(renovate): point extends at tomasbjerre/.github
+keepsheet 0.4.2
+- chore(deps): update dependency gradle to v9.8.2 (#108)
+- chore(deps): update plugin com.diffplug.spotless to v8.10.4 (#107)
+- chore(deps): update plugin org.jetbrains.kotlin.android to v2.4.21 (#105)
+- chore(deps): update plugin org.jetbrains.kotlin.plugin.compose to v2.4.21 (#106)
+- chore(renovate): point extends at renovate-config repo
+- chore(deps): update dependency gradle to v9.8.1 (#104)
+- chore(changelog): updating changelog
+- chore(andr
