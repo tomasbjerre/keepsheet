@@ -178,7 +178,7 @@ dependencies {
     // without a system permission dialog blocking a headless emulator run.
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestUtil("androidx.test:orchestrator:1.6.1")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.1")
     // InstructionVideoTest stubs the system photo picker's ActivityResult so Import
     // returns real sample pages (keepsheet#55) instead of needing a live picker UI.
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
