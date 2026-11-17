@@ -14,7 +14,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
     id("se.bjurr.gradle.update-versions") version "3.0.4"
-    id("com.github.triplet.play") version "4.1.1"
+    id("com.github.triplet.play") version "4.1.2"
 }
 
 fun runGit(vararg args: String): String {
