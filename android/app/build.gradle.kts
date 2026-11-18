@@ -167,7 +167,7 @@ dependencies {
     // Platform test run by the vintage engine below.
     testImplementation("junit:junit:4.13.2")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine:6.1.3")
-    testImplementation("org.robolectric:robolectric:4.17")
+    testImplementation("org.robolectric:robolectric:4.18")
     testImplementation("androidx.test:core:1.7.0")
 
     // Instrumented: drives the real app on a device/emulator to capture screenshots
