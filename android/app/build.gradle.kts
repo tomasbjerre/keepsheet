@@ -37,9 +37,10 @@ fun gitCommitCount(): Int {
 android {
     namespace = "com.github.tomasbjerre.keepsheet"
     compileSdk {
-        version = release(37) {
-            minorApiLevel = 1
-        }
+        version =
+            release(37) {
+                minorApiLevel = 1
+            }
     }
 
     defaultConfig {
