@@ -36,7 +36,12 @@ fun gitCommitCount(): Int {
 
 android {
     namespace = "com.github.tomasbjerre.keepsheet"
-    compileSdk = 37
+    compileSdk {
+        version =
+            release(37) {
+                minorApiLevel = 1
+            }
+    }
 
     defaultConfig {
         applicationId = "com.github.tomasbjerre.keepsheet"
@@ -117,7 +122,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.navigation:navigation-compose:2.10.2")
 
-    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.11.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -182,7 +187,7 @@ dependencies {
     // InstructionVideoTest stubs the system photo picker's ActivityResult so Import
     // returns real sample pages (keepsheet#55) instead of needing a live picker UI.
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.11.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
